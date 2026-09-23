@@ -15,6 +15,10 @@ WHEELHOUSE = Path(os.environ.get("CI_WHEELHOUSE", HARNESS / "offline/wheels")).r
 BUNDLE = Path(os.environ.get("BUNDLE_OUTPUT", ROOT / ".integration-state/artifacts/networkclaw-bundle.tar.gz")).resolve()
 OUT = ROOT / ".integration-state/artifacts/ubuntu-22.04-linux-amd64"
 BASE_IMAGE = "python:3.12-slim-bookworm"
+BASE_IMAGE_REF = os.environ.get(
+    "BASE_IMAGE",
+    "python:3.12-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+)
 
 def run(command, **kwargs):
     subprocess.run(command, check=True, **kwargs)
@@ -72,6 +76,7 @@ def main() -> int:
         }
         bundle_sha = sha(BUNDLE) if BUNDLE.is_file() else None
         build_args = [
+            "--build-arg", f"BASE_IMAGE={BASE_IMAGE_REF}",
             "--build-arg", f"SOURCE_COMMIT={source_data['networkclaw']['commit'] or 'unknown'}",
             "--build-arg", f"HARNESS_COMMIT={source_data['harness']['commit'] or 'unknown'}",
             "--build-arg", f"INTEGRATION_COMMIT={source_data['integration']['commit'] or 'unknown'}",
@@ -110,7 +115,7 @@ def main() -> int:
             raise RuntimeError("base image has no immutable RepoDigest")
         manifest = {"schema_version": 1, "platform": "linux/amd64",
                     "builder": host_identity(),
-                    "runtime": {"base_image": BASE_IMAGE, "os": "debian", "version": "12"},
+                    "runtime": {"base_image": BASE_IMAGE_REF, "os": "debian", "version": "12"},
                     "archive_format": archive_format,
                     "base_image_digests": base_inspect,
                     "bundle_sha256": bundle_sha,
