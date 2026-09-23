@@ -55,6 +55,10 @@ make image
 
 CI 组合配置模板见 [`sources.lock.example.yaml`](sources.lock.example.yaml)。不要把模板占位值当作已验证的源码版本。
 
+## 实施计划
+
+任务依赖、阶段顺序、旧计划缺口映射和验收门禁见 [`docs/plan/integration-plan.md`](docs/plan/integration-plan.md)。
+
 ## 交付关系
 
 ```text

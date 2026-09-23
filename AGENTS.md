@@ -72,3 +72,4 @@ Manifest 至少记录：bundle 版本、三个源码树 hash、可用时的 Git 
 - [`docs/adr/0001-three-repository-delivery.md`](docs/adr/0001-three-repository-delivery.md)
 - [`docs/local-development.md`](docs/local-development.md)
 - [`docs/bundle.md`](docs/bundle.md)
+- [`docs/plan/integration-plan.md`](docs/plan/integration-plan.md)
