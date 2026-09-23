@@ -1,0 +1,20 @@
+# CI/release source combination template. Copy to sources.lock.yaml and fill with real values.
+schema_version: 1
+mode: checkout
+networkclaw:
+  repository: REPLACE_WITH_CUSTOMER_NETWORKCLAW_REPOSITORY
+  ref: REPLACE_WITH_REF
+  commit: REPLACE_WITH_COMMIT
+  tree_sha256: REPLACE_WITH_TREE_HASH
+harness:
+  repository: REPLACE_WITH_CUSTOMER_HARNESS_REPOSITORY
+  ref: REPLACE_WITH_REF
+  commit: REPLACE_WITH_COMMIT
+  tree_sha256: REPLACE_WITH_TREE_HASH
+protocol:
+  version: "1.0"
+target:
+  os: ubuntu
+  version: "22.04"
+  architecture: amd64
+

@@ -1,0 +1,11 @@
+workspace.local.yaml
+.venv/
+.cache/
+dist/
+build/
+artifacts/
+tmp/
+logs/
+*.log
+.DS_Store
+
