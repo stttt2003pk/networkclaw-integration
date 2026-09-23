@@ -3,8 +3,8 @@ mode: checkout
 networkclaw:
   repository: https://github.com/stttt2003pk/NetworkClawV1.git
   ref: refs/heads/main
-  commit: "19ddb0479a1e5570980d33dd444d79e1c005614c"
-  tree_sha256: "4cfe32c19007a3e318b97731370e7eaf47161a026a8184667b95923623c53e3b"
+  commit: "90bd6c0b09c781288cab6670ec6e3ab1b1cc785d"
+  tree_sha256: "6c08379dac2db631516445e86d743c96b1708eef157bae342100d55e2bd37384"
 harness:
   repository: https://github.com/stttt2003pk/networkclaw-harness.git
   ref: refs/heads/main
@@ -14,7 +14,7 @@ integration:
   repository: https://github.com/stttt2003pk/networkclaw-integration.git
   ref: refs/heads/main
   commit: "6e8e69a15f964a2332e1ef7da9553c6766c78db1"
-  tree_sha256: "277b5998637a558187ee1372c8738513cfae17651be45eb24f38664913cebc4f"
+  tree_sha256: "47d81b60e3352e29dbe1c2d953636a242a7bfaedcd209f2ede2912785583ee58"
 protocol:
   version: "1.0"
 target:
