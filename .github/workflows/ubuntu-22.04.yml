@@ -18,7 +18,7 @@ jobs:
         with:
           repository: ${{ vars.NETWORKCLAW_REPOSITORY || 'stttt2003pk/NetworkClawV1' }}
           path: NetworkClaw
-          ref: ${{ vars.NETWORKCLAW_REF || '4067fcb575bba2031b4e2dae754d2b9d3a192d13' }}
+          ref: ${{ vars.NETWORKCLAW_REF || '19ddb0479a1e5570980d33dd444d79e1c005614c' }}
           token: ${{ secrets.SOURCE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
         with:
