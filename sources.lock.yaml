@@ -3,7 +3,7 @@ mode: checkout
 networkclaw:
   repository: https://github.com/stttt2003pk/NetworkClawV1.git
   ref: refs/heads/main
-  commit: "90bd6c0b09c781288cab6670ec6e3ab1b1cc785d"
+  commit: "90bd6c0d07eca6426c9ca62f8043dffa3f9d95d4"
   tree_sha256: "6c08379dac2db631516445e86d743c96b1708eef157bae342100d55e2bd37384"
 harness:
   repository: https://github.com/stttt2003pk/networkclaw-harness.git
