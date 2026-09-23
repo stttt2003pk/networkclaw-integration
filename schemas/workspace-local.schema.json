@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://networkclaw.local/schemas/workspace-local.schema.json",
+  "title": "NetworkClaw local workspace configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "mode", "networkclaw_path", "harness_path"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "mode": {"type": "string", "enum": ["local"]},
+    "networkclaw_path": {"type": "string", "minLength": 1},
+    "harness_path": {"type": "string", "minLength": 1},
+    "state_dir": {"type": "string", "minLength": 1},
+    "python": {"type": "string", "minLength": 1},
+    "go_binary": {"type": "string", "minLength": 1},
+    "provider_env_file": {"type": "string", "minLength": 1},
+    "service_id": {"type": "string", "minLength": 1},
+    "startup_timeout_seconds": {"type": "integer", "minimum": 1}
+  }
+}

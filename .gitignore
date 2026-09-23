@@ -1,5 +1,8 @@
 workspace.local.yaml
 .venv/
+.integration-state/
+__pycache__/
+*.egg-info/
 .cache/
 dist/
 build/

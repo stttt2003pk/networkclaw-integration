@@ -1,0 +1,23 @@
+{
+  "protocol_version": "1.0",
+  "type": "turn.completed",
+  "request_id": "req-example",
+  "tenant_id": "tenant-example",
+  "user_id": "user-example",
+  "session_id": "session-example",
+  "turn_id": "turn-example",
+  "run_id": "run-example",
+  "sequence": 7,
+  "end": true,
+  "payload": {
+    "outcome": "completed",
+    "end": true,
+    "reason_code": "",
+    "generation": 2,
+    "execution_epoch": 1,
+    "status": "completed",
+    "runtime": "hermes_native",
+    "api_calls": 1,
+    "streamed": true
+  }
+}

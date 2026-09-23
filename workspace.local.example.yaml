@@ -1,5 +1,13 @@
 # Copy to workspace.local.yaml. This file is for a developer machine and is not committed.
+schema_version: 1
 mode: local
 networkclaw_path: ../NetworkClaw
 harness_path: ../networkclaw-harness
 
+# Optional overrides. Paths are resolved relative to this Integration repository.
+# state_dir: .integration-state
+# python: python3.12
+# go_binary: go
+# provider_env_file: ../NetworkClaw/.env
+# service_id: integration-chatsvc
+# startup_timeout_seconds: 15

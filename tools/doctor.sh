@@ -2,26 +2,19 @@
 set -eu
 
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-workspace_file="$repo_dir/workspace.local.yaml"
-
-networkclaw_path="${NETWORKCLAW_PATH:-$repo_dir/../NetworkClaw}"
-harness_path="${HARNESS_PATH:-$repo_dir/../networkclaw-harness}"
-
-if [ -f "$workspace_file" ]; then
-  configured_networkclaw=$(sed -n 's/^[[:space:]]*networkclaw_path:[[:space:]]*//p' "$workspace_file" | tail -n 1)
-  configured_harness=$(sed -n 's/^[[:space:]]*harness_path:[[:space:]]*//p' "$workspace_file" | tail -n 1)
-  case "$configured_networkclaw" in
-    /*) [ -z "$configured_networkclaw" ] || networkclaw_path=$configured_networkclaw ;;
-    *) [ -z "$configured_networkclaw" ] || networkclaw_path="$repo_dir/$configured_networkclaw" ;;
-  esac
-  case "$configured_harness" in
-    /*) [ -z "$configured_harness" ] || harness_path=$configured_harness ;;
-    *) [ -z "$configured_harness" ] || harness_path="$repo_dir/$configured_harness" ;;
-  esac
-fi
-
-networkclaw_path=$(CDPATH= cd -- "$networkclaw_path" 2>/dev/null && pwd || true)
-harness_path=$(CDPATH= cd -- "$harness_path" 2>/dev/null && pwd || true)
+resolved=$(python3 "$repo_dir/tools/resolve_sources.py" --json)
+networkclaw_path=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["networkclaw"]["path"])')
+harness_path=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["harness"]["path"])')
+networkclaw_tree=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["networkclaw"]["tree_sha256"])')
+harness_tree=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["harness"]["tree_sha256"])')
+networkclaw_commit=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["networkclaw"]["commit"] or "no-git")')
+networkclaw_dirty=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["networkclaw"]["dirty"])')
+harness_commit=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["harness"]["commit"] or "no-git")')
+harness_dirty=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["harness"]["dirty"])')
+python_bin=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["python"])')
+go_binary=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["go_binary"])')
+state_dir=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["state_dir"])')
+provider_env_file=$(printf '%s' "$resolved" | python3 -c 'import json,sys; print(json.load(sys.stdin)["provider_env_file"] or "")')
 
 failed=0
 
@@ -30,7 +23,7 @@ check_repo() {
   path=$2
   marker=$3
 
-  if [ -z "$path" ] || [ ! -d "$path/.git" ] || [ ! -f "$path/$marker" ]; then
+  if [ -z "$path" ] || [ ! -d "$path" ] || [ ! -f "$path/$marker" ]; then
     printf '%s\n' "FAIL $label repository is unavailable or invalid: ${path:-<unresolved>}" >&2
     failed=1
     return
@@ -52,11 +45,65 @@ check_command() {
 check_repo NetworkClaw "$networkclaw_path" go.mod
 check_repo Harness "$harness_path" pyproject.toml
 check_command Git git
-check_command Go go
+check_command Go "$go_binary"
 check_command Python3 python3
+check_command ConfiguredPython "$python_bin"
+integration_python="$repo_dir/.venv/bin/python"
+check_command IntegrationPython "$integration_python"
+if [ -n "$provider_env_file" ]; then
+  printf '%s\n' 'OK   Provider environment file configured (values suppressed)'
+else
+  printf '%s\n' 'INFO No provider .env found; shell environment will be used'
+fi
 
+if command -v "$python_bin" >/dev/null 2>&1; then
+  python_version=$($python_bin -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+elif [ -x "$python_bin" ]; then
+  python_version=$($python_bin -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+else
+  python_version=unavailable
+fi
+case "$python_version" in
+  3.12) printf '%s\n' "OK   CPython $python_version" ;;
+  *) printf '%s\n' "FAIL Harness requires CPython 3.12, found $python_version" >&2; failed=1 ;;
+esac
+
+if [ "$python_version" = 3.12 ]; then
+  if "$python_bin" -c 'import yaml, networkclaw_harness.host' >/dev/null 2>&1; then
+    printf '%s\n' 'OK   Harness runtime imports and PyYAML dependency'
+  else
+    printf '%s\n' 'FAIL Harness runtime/dependencies are unavailable in configured Python' >&2
+    failed=1
+  fi
+fi
+
+if [ -x "$integration_python" ]; then
+  if "$integration_python" -c 'import dotenv, jsonschema, yaml' >/dev/null 2>&1; then
+    printf '%s\n' 'OK   Integration Python dependencies'
+  else
+    printf '%s\n' 'FAIL Integration dependencies are unavailable; run make bootstrap' >&2
+    failed=1
+  fi
+else
+  printf '%s\n' 'FAIL Integration Python environment is missing; run make bootstrap' >&2
+  failed=1
+fi
+
+printf '%s\n' "NetworkClaw source: commit=$networkclaw_commit dirty=$networkclaw_dirty tree_sha256=$networkclaw_tree"
+printf '%s\n' "Harness source: commit=$harness_commit dirty=$harness_dirty tree_sha256=$harness_tree"
+
+if [ -e "$state_dir/sockets/chatsvc.sock" ]; then
+  printf '%s\n' "WARN integration socket exists: $state_dir/sockets/chatsvc.sock" >&2
+fi
+if command -v docker >/dev/null 2>&1; then
+  printf '%s\n' "OK   Docker: $(command -v docker)"
+elif command -v podman >/dev/null 2>&1; then
+  printf '%s\n' "OK   Podman: $(command -v podman)"
+else
+  printf '%s\n' 'INFO Docker/Podman unavailable; local source development remains available'
+fi
 if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 
-printf '%s\n' 'Integration workspace is ready for local tooling.'
+printf '%s\n' 'Integration workspace diagnostics completed.'

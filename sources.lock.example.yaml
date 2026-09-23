@@ -1,20 +1,24 @@
-# CI/release source combination template. Copy to sources.lock.yaml and fill with real values.
+# CI/release example. Replace the synthetic repository/ref/commit/hash values before use.
 schema_version: 1
 mode: checkout
 networkclaw:
-  repository: REPLACE_WITH_CUSTOMER_NETWORKCLAW_REPOSITORY
-  ref: REPLACE_WITH_REF
-  commit: REPLACE_WITH_COMMIT
-  tree_sha256: REPLACE_WITH_TREE_HASH
+  repository: https://git.example.invalid/customer/networkclaw.git
+  ref: refs/tags/customer-baseline
+  commit: "0000000000000000000000000000000000000001"
+  tree_sha256: "0000000000000000000000000000000000000000000000000000000000000001"
 harness:
-  repository: REPLACE_WITH_CUSTOMER_HARNESS_REPOSITORY
-  ref: REPLACE_WITH_REF
-  commit: REPLACE_WITH_COMMIT
-  tree_sha256: REPLACE_WITH_TREE_HASH
+  repository: https://git.example.invalid/customer/networkclaw-harness.git
+  ref: refs/tags/customer-baseline
+  commit: "0000000000000000000000000000000000000002"
+  tree_sha256: "0000000000000000000000000000000000000000000000000000000000000002"
+integration:
+  repository: https://git.example.invalid/customer/networkclaw-integration.git
+  ref: refs/tags/customer-baseline
+  commit: "0000000000000000000000000000000000000003"
+  tree_sha256: "0000000000000000000000000000000000000000000000000000000000000003"
 protocol:
   version: "1.0"
 target:
   os: ubuntu
   version: "22.04"
   architecture: amd64
-

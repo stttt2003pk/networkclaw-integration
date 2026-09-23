@@ -1,0 +1,23 @@
+schema_version: 1
+mode: checkout
+networkclaw:
+  repository: https://github.com/stttt2003pk/NetworkClawV1.git
+  ref: refs/heads/main
+  commit: "19ddb0479a1e5570980d33dd444d79e1c005614c"
+  tree_sha256: "4cfe32c19007a3e318b97731370e7eaf47161a026a8184667b95923623c53e3b"
+harness:
+  repository: https://github.com/stttt2003pk/networkclaw-harness.git
+  ref: refs/heads/main
+  commit: "5b3284a2a75db3d036e83fabf1d76955d419c395"
+  tree_sha256: "f5299ea55a65201eeda0e937097c50ec1d19c9dbac4c39e35fab7a9976aea08c"
+integration:
+  repository: https://github.com/stttt2003pk/networkclaw-integration.git
+  ref: refs/heads/main
+  commit: "6e8e69a15f964a2332e1ef7da9553c6766c78db1"
+  tree_sha256: "277b5998637a558187ee1372c8738513cfae17651be45eb24f38664913cebc4f"
+protocol:
+  version: "1.0"
+target:
+  os: ubuntu
+  version: "22.04"
+  architecture: amd64

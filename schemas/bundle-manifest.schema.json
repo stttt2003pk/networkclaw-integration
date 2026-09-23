@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://networkclaw.local/schemas/bundle-manifest.schema.json",
+  "title": "NetworkClaw bundle provenance manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "bundle_version", "source_date_epoch", "customized", "sources", "hermes", "protocol", "target", "artifacts"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "bundle_version": {"type": "string", "minLength": 1},
+    "source_date_epoch": {"type": "integer", "minimum": 0},
+    "customized": {"type": "boolean"},
+    "sources": {
+      "type": "object", "additionalProperties": false,
+      "required": ["networkclaw", "harness", "integration"],
+      "properties": {
+        "networkclaw": {"$ref": "#/$defs/source"},
+        "harness": {"$ref": "#/$defs/source"},
+        "integration": {"$ref": "#/$defs/source"}
+      }
+    },
+    "hermes": {
+      "type": "object", "additionalProperties": false,
+      "required": ["upstream_ref", "upstream_repository", "patches", "vendor_manifest_sha256"],
+      "properties": {
+        "upstream_ref": {"type": ["string", "null"]},
+        "upstream_repository": {"type": ["string", "null"]},
+        "patches": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name", "sha256"], "properties": {"name": {"type": "string"}, "sha256": {"$ref": "#/$defs/hash"}}}},
+        "vendor_manifest_sha256": {"anyOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]}
+      }
+    },
+    "protocol": {"type": "object", "additionalProperties": false, "required": ["version"], "properties": {"version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"}}},
+    "target": {"type": "object", "additionalProperties": false, "required": ["os", "version", "architecture"], "properties": {"os": {"type": "string"}, "version": {"type": "string"}, "architecture": {"type": "string"}}},
+    "artifacts": {"type": "object", "additionalProperties": false, "required": ["files"], "properties": {"files": {"type": "object", "propertyNames": {"pattern": "^(networkclaw|networkclaw-harness|integration)/"}, "additionalProperties": {"$ref": "#/$defs/hash"}}}}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "commit", "tree_sha256", "dirty", "diff_sha256", "customized", "vendor_tree_sha256"],
+      "properties": {
+        "path": {"enum": ["networkclaw", "harness", "integration"]},
+        "repository": {"type": "string"},
+        "commit": {"type": ["string", "null"]},
+        "tree_sha256": {"$ref": "#/$defs/hash"},
+        "dirty": {"type": ["boolean", "null"]},
+        "diff_sha256": {"anyOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]},
+        "customized": {"type": "boolean"},
+        "vendor_tree_sha256": {"anyOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]}
+      }
+    }
+  }
+}

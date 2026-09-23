@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "bundle_version": "0.1.0-local",
+  "source_date_epoch": 0,
+  "customized": true,
+  "sources": {
+    "networkclaw": {
+      "path": "networkclaw",
+      "commit": null,
+      "tree_sha256": "0000000000000000000000000000000000000000000000000000000000000001",
+      "dirty": null,
+      "diff_sha256": null,
+      "customized": true,
+      "vendor_tree_sha256": null
+    },
+    "harness": {
+      "path": "harness",
+      "commit": null,
+      "tree_sha256": "0000000000000000000000000000000000000000000000000000000000000002",
+      "dirty": null,
+      "diff_sha256": null,
+      "customized": true,
+      "vendor_tree_sha256": "0000000000000000000000000000000000000000000000000000000000000003"
+    },
+    "integration": {
+      "path": "integration",
+      "commit": null,
+      "tree_sha256": "0000000000000000000000000000000000000000000000000000000000000004",
+      "dirty": null,
+      "diff_sha256": null,
+      "customized": true,
+      "vendor_tree_sha256": null
+    }
+  },
+  "hermes": {
+    "upstream_ref": null,
+    "upstream_repository": null,
+    "patches": [],
+    "vendor_manifest_sha256": null
+  },
+  "protocol": {"version": "1.0"},
+  "target": {"os": "ubuntu", "version": "22.04", "architecture": "amd64"},
+  "artifacts": {
+    "files": {
+      "integration/pyproject.toml": "0000000000000000000000000000000000000000000000000000000000000005"
+    }
+  }
+}

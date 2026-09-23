@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://networkclaw.local/schemas/host-protocol-v1-terminal.schema.json",
+  "title": "NetworkClaw Host Protocol v1 terminal event",
+  "type": "object",
+  "required": ["protocol_version", "type", "request_id", "sequence", "end", "payload"],
+  "properties": {
+    "protocol_version": {"type": "string", "const": "1.0"},
+    "type": {"type": "string", "enum": ["turn.completed", "turn.failed", "turn.cancelled"]},
+    "request_id": {"type": "string", "minLength": 1},
+    "tenant_id": {"type": "string"},
+    "user_id": {"type": "string"},
+    "session_id": {"type": "string"},
+    "turn_id": {"type": "string"},
+    "run_id": {"type": "string"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "end": {"type": "boolean", "const": true},
+    "payload": {
+      "type": "object",
+      "required": ["outcome", "end", "reason_code", "generation"],
+      "properties": {
+        "outcome": {"type": "string", "enum": ["completed", "failed", "cancelled"]},
+        "end": {"type": "boolean", "const": true},
+        "reason_code": {"type": "string"},
+        "generation": {"type": "integer", "minimum": 0},
+        "execution_epoch": {"type": "integer", "minimum": 1},
+        "code": {"type": "string"},
+        "retryable": {"type": "boolean"},
+        "status": {"type": "string"},
+        "runtime": {"type": "string"},
+        "api_calls": {"type": "integer", "minimum": 0},
+        "streamed": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {"if": {"properties": {"type": {"const": "turn.completed"}}}, "then": {"properties": {"payload": {"properties": {"outcome": {"const": "completed"}}}}}},
+    {"if": {"properties": {"type": {"const": "turn.failed"}}}, "then": {"properties": {"payload": {"properties": {"outcome": {"const": "failed"}}}}}},
+    {"if": {"properties": {"type": {"const": "turn.cancelled"}}}, "then": {"properties": {"payload": {"properties": {"outcome": {"const": "cancelled"}}}}}}
+  ],
+  "additionalProperties": true
+}

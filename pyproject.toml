@@ -1,0 +1,13 @@
+[project]
+name = "networkclaw-integration-tools"
+version = "0.1.0"
+description = "Local and CI tooling for the NetworkClaw multi-repository workspace"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "jsonschema==4.25.1",
+  "PyYAML==6.0.3",
+  "python-dotenv==1.2.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -27,7 +27,7 @@ primary 必须通过以下信息了解其他仓库，而不是把源码复制进
 推荐目录：
 
 ```text
-/Users/maxrocketman/myproject/
+<workspace>/
 ├── NetworkClaw/
 ├── networkclaw-harness/
 └── networkclaw-integration/
@@ -37,21 +37,34 @@ primary 必须通过以下信息了解其他仓库，而不是把源码复制进
 
 ```bash
 cp workspace.local.example.yaml workspace.local.yaml
+make bootstrap
 make doctor
 ```
 
-后续入口预留为：
+当前本地联合开发入口：
 
 ```bash
 make dev-up
-make test
-make integration-test
+make restart-go
+make restart-harness
+make logs
 make bundle
-make verify-bundle
-make image
+make dev-down
 ```
 
-当前仓库刚初始化，入口先作为稳定契约保留；实现应按 ADR 和 AGENTS 约束逐步落地，不要先造一个新的 runtime 或 scheduler。
+`make restart-harness` 会重启其拥有者 chatsvc，因为 Harness 是 chatsvc 管理的 JSONL 子进程，而不是独立 daemon。Integration 状态和日志落在 `.integration-state/`。provider 本地配置从 NetworkClaw `.env` 读取（shell 环境优先），值不会进入日志。契约示例可通过 `make validate-contracts` 校验。
+
+故障夹具和真实跨仓验收入口：
+
+```bash
+make fault-fixtures
+make integration-test
+make combination-matrix
+```
+
+`make fault-fixtures` 只运行 Integration 自身的离线 provider/transport 夹具，不需要外部模型 key。`make integration-test` 在此基础上运行 NetworkClaw 的真实 Go ↔ Harness interop；可以设置 `NETWORKCLAW_SKIP_REAL_INTEROP=1` 只验证夹具。JSONL fault proxy 包裹真实 Harness 的示例见 [`docs/fault-fixtures.md`](docs/fault-fixtures.md)。
+
+`make combination-matrix` 与 `make integration-test` 使用同一矩阵入口，生成 `.integration-state/evidence/combination-matrix.json`；场景和 Mac 验收证据见 [`docs/evidence/combination-matrix.md`](docs/evidence/combination-matrix.md)。
 
 CI 组合配置模板见 [`sources.lock.example.yaml`](sources.lock.example.yaml)。不要把模板占位值当作已验证的源码版本。
 
