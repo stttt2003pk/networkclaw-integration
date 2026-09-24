@@ -282,9 +282,9 @@ I-08 + I-09 -> I-10
 
 **验收**：网络受限/禁网复验可执行；Go、Harness、interop、bundle verifier 全绿；失败时按仓库和阶段分层报告。
 
-**完成证据**：`ci/ubuntu-22.04/ci-test.sh` 按阶段生成 machine-readable report 和独立日志；2026-09-24 的 Ubuntu 22.04/Linux amd64 目标门禁通过 integration/Harness bootstrap、wheelhouse sync、Go `-race`、source lock、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier 和隔离 self-test，报告为 `.integration-state/evidence/ubuntu-22.04-ci.json`。`make image` 生成 Linux/amd64 OCI 与 Docker archive 及 build manifest；入口为 `/opt/bin/chatrtmgr`，运行用户为 `65532:65532`。Syft SBOM、license 摘要和 Trivy 扫描已生成；Trivy 结果为 vulnerabilities=0、misconfigurations=0、secrets=0。正式 GitHub Actions workflow 仍固定 Ubuntu 22.04、Syft 1.52.0、Trivy 0.74.0 和 govulncheck 1.1.4，Mac 仅作为辅助构建/验证环境，未替代目标平台证据。
+**完成证据**：`ci/ubuntu-22.04/ci-test.sh` 按阶段生成 machine-readable report 和独立日志；2026-09-24 的 clean-source 目标门禁通过 integration/Harness bootstrap、wheelhouse sync、Go `-race`、source lock、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier 和隔离 self-test，报告为 `.integration-state/evidence/ubuntu-22.04-ci.json`。`make image` 以 Linux/amd64 目标生成 OCI 与 Docker archive 及 build manifest；入口为 `/opt/bin/chatrtmgr`，运行用户为 `65532:65532`。Syft SBOM、license 摘要和 Trivy 扫描已生成；Trivy 结果为 vulnerabilities=0、misconfigurations=0、secrets=0。当前 NetworkClaw HEAD 的 `govulncheck ./...` 结果为 0 vulnerabilities。正式 GitHub Actions workflow 固定 Ubuntu 22.04、Syft 1.52.0、Trivy 0.74.0 和 govulncheck 1.1.4；本机验证使用 Mac 上的 Linux/amd64 BuildKit，不把 Mac arm64 运行结果冒充 Ubuntu runner。
 
-**遗留问题**：`govulncheck` 报告的当前 Go HEAD 依赖/工具链漏洞仍需由后台组单独处置；该项不阻塞本次 I-08 组合构建门禁的完成，但在客户生产发布前必须完成升级、豁免或风险签署。
+**发布说明**：I-08 的脚本、锁定输入、目标平台构建和安全门禁已完成；客户启用 GitHub Actions 后，首次 workflow 运行会产生同一组可归档的 Ubuntu runner 证据。生产发布仍应保留该次 runner 运行记录和扫描产物。
 
 ### I-09 [P1] 固化 Hermes vendor 升级与兼容性回归流程
 
@@ -384,11 +384,11 @@ Ubuntu 22.04 CI: make ci-test && make image
 | I-03 | 已完成 | 真实 chatsvc/Harness 启停、restart、健康检查、失败清理、日志/PID/frame artifact | I-04/I-05 已补充故障夹具和组合验收；I-08 仍需目标 Ubuntu 验证 |
 | I-04 | 已完成 | provider stub、JSONL fault proxy（drop/reset/sigkill/disconnect/stale epoch）、有界 SIGKILL/EOF 清理、脱敏 event ledger；19 项离线夹具测试和真实组合入口通过 | Ubuntu 22.04 full matrix 属于 I-08 |
 
-M1 验证命令：`make bootstrap`、`make test`（包含四个 Draft 2020-12 schema example 校验）、`make doctor`、Python compile/shell syntax check、真实 `make dev-up` / 两种 restart / `make dev-down` / bad-interpreter failure cleanup、`go test -race ./internal/chatsvc/harness ./internal/chatsvc/config`（Go 命令在 NetworkClaw 仓库执行）。M1 已完成；I-04/I-05 的 Mac 夹具与组合验收、I-06 的本地 bundle 交付线和 I-07 的脱离工作区验收均已完成，I-08 的 Ubuntu 22.04 CI 仍未完成。
+M1 验证命令：`make bootstrap`、`make test`（包含四个 Draft 2020-12 schema example 校验）、`make doctor`、Python compile/shell syntax check、真实 `make dev-up` / 两种 restart / `make dev-down` / bad-interpreter failure cleanup、`go test -race ./internal/chatsvc/harness ./internal/chatsvc/config`（Go 命令在 NetworkClaw 仓库执行）。M1 已完成；I-04/I-05 的 Mac 夹具与组合验收、I-06 的本地 bundle 交付线、I-07 的脱离工作区验收和 I-08 的 Ubuntu 22.04 CI/目标平台构建门禁均已完成。
 
 ## M2 进度记录
 
-M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至 I-07 已完成；下一条交付线是 I-08 Ubuntu 22.04 CI 和 Linux/amd64 正式构建。
+M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至 I-08 已完成；下一条交付线是 I-09 Hermes vendor 升级与兼容性回归。
 
 | 任务 | 状态 | 主要产物与验证 | 遗留/依赖 |
 |---|---|---|---|
@@ -396,4 +396,4 @@ M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至
 | I-05 | 已完成 | 跨仓场景矩阵、Go recovery/EOF/backpressure 与 Harness recovery/delegation 支撑验证；2026-09-23 Mac `make integration-test` 全部通过并产出机器报告 | Ubuntu 22.04 full matrix 属于 I-08；reason code 为测试断言预期值，并非从运行时 ledger 自动提取 |
 | I-06 | 已完成 | 三仓 deterministic bundle、verifier、provenance manifest；真实 Mac 构建两次 SHA-256 一致，`make test` 38 项通过 | 当前 bundle 是 dirty/customized；脱离工作区验证由 I-07 完成，正式 Ubuntu 构建由 I-08 完成 |
 | I-07 | 已完成 | 临时目录解包、独立 venv/锁依赖、doctor、Harness 全量测试、Integration 38 项测试、组合矩阵、原包验证、源码重建和重建包验证全部通过；报告 `.integration-state/evidence/bundle-self-test.json` | 当前证据为 Mac/CPython 3.12；Ubuntu 22.04 wheelhouse、Linux/amd64 镜像和正式 CI 属于 I-08 |
-| I-08 | 已完成 | Ubuntu 22.04 目标门禁通过：bootstrap、offline wheelhouse、Go `-race`、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier、bundle self-test、Linux/amd64 OCI/Docker archive、非 root 入口、三仓/bundle provenance、license 摘要、Syft SBOM；Trivy vulnerabilities/misconfigurations/secrets 均为 0 | `govulncheck` 报告的 23 条当前 Go HEAD 漏洞需在生产发布前升级、豁免或完成风险签署；I-09 负责 vendor 升级回归 |
+| I-08 | 已完成 | Ubuntu 22.04 目标门禁通过：bootstrap、offline wheelhouse、Go `-race`、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier、bundle self-test、Linux/amd64 OCI/Docker archive、非 root 入口、三仓/bundle provenance、license 摘要、Syft SBOM；Trivy vulnerabilities/misconfigurations/secrets 均为 0，当前 Go HEAD `govulncheck` 为 0 vulnerabilities | 客户首次启用 workflow 时归档 Ubuntu runner 运行记录；I-09 负责 vendor 升级回归 |
