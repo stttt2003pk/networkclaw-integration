@@ -292,6 +292,8 @@ I-08 + I-09 -> I-10
 
 **主责**：Harness/UE 组负责 vendor 权威变更；构建组负责组合回归、manifest 和门禁集成。
 
+**状态**：已完成（2026-09-24）。
+
 **内容**：
 
 - vendor 更新只在 `networkclaw-harness` 执行：同步、patch、allowlist、hash、runtime closure、Harness tests。
@@ -307,7 +309,9 @@ I-08 + I-09 -> I-10
 - `docs/vendor-upgrade.md`
 - vendor upgrade report。
 
-**验收**：至少用一次 vendor 版本变化或等价 fixture 演示升级前后 provenance、Harness 测试和组合验收；注入一次不兼容结果，确认门禁能定位失败并阻止生成正式交付输入。验证通过后 source lock 可切换到新基线；保留旧 lock 作为人工恢复依据。
+**验收**：至少用一次 vendor 版本变化或等价 fixture 演示升级前后 provenance、Harness 测试和组合验收；注入一次不兼容结果，确认 vendor verifier 在测试和 bundle 之前阻断正式交付输入；恢复原基线后 Harness 测试与组合矩阵再次通过。验证通过后 source lock 可通过显式 `--update-lock` 切换到新基线，且只接受 clean 源码；保留旧 lock 作为人工恢复依据。
+
+**完成证据**：`tools/vendor_status.py` 汇总 Hermes upstream commit、patch series、vendor manifest/tree hash、三仓 commit/tree/dirty 和 source-lock 匹配状态；`tools/vendor_compat_test.py` 串联 Harness vendor verifier、Harness 全量测试、Go↔Harness 组合矩阵和 source-lock gate，默认不修改 lock，`--update-lock` 只在 clean 且全门禁通过后更新并复验。`tools/build-bundle.py --release` 现在强制调用 Harness vendor verifier，失败时不生成 release bundle；`tests/test_bundle.py` 新增 release 阻断测试。2026-09-24 vendor fixture 报告 `.integration-state/evidence/vendor-compat-fixture.json` 证明：模拟 vendor 更新 verifier/Harness/组合矩阵全部通过；注入不兼容文件被阻断；正式交付未生成；恢复原基线后 Harness 和组合矩阵再次通过。
 
 ### I-10 [P1] 固化首次部署、运行调试和客户交接
 
@@ -390,7 +394,7 @@ M1 验证命令：`make bootstrap`、`make test`（包含四个 Draft 2020-12 sc
 
 ## M2 进度记录
 
-M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至 I-08 已完成；下一条交付线是 I-09 Hermes vendor 升级与兼容性回归。
+M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至 I-09 已完成；下一条交付线是 I-10 首次部署、运行调试和客户交接。
 
 | 任务 | 状态 | 主要产物与验证 | 遗留/依赖 |
 |---|---|---|---|
@@ -399,3 +403,4 @@ M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至
 | I-06 | 已完成 | 三仓 deterministic bundle、verifier、provenance manifest；真实 Mac 构建两次 SHA-256 一致，`make test` 38 项通过 | 当前 bundle 是 dirty/customized；脱离工作区验证由 I-07 完成，正式 Ubuntu 构建由 I-08 完成 |
 | I-07 | 已完成 | 临时目录解包、独立 venv/锁依赖、doctor、Harness 全量测试、Integration 38 项测试、组合矩阵、原包验证、源码重建和重建包验证全部通过；报告 `.integration-state/evidence/bundle-self-test.json` | 当前证据为 Mac/CPython 3.12；Ubuntu 22.04 wheelhouse、Linux/amd64 镜像和正式 CI 属于 I-08 |
 | I-08 | 已完成 | Ubuntu 22.04 目标门禁通过：bootstrap、offline wheelhouse、Go `-race`、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier、bundle self-test、Linux/amd64 OCI/Docker archive、非 root 入口、三仓/bundle provenance、license 摘要、Syft SBOM；Trivy vulnerabilities/misconfigurations/secrets 均为 0，当前 Go HEAD `govulncheck` 为 0 vulnerabilities | 客户首次启用 workflow 时归档 Ubuntu runner 运行记录；I-09 负责 vendor 升级回归 |
+| I-09 | 已完成 | `vendor-status` 汇总 Hermes/vendor 与三仓身份；`vendor-compat-test` 串联 vendor verifier、Harness 全量测试、组合矩阵和 source-lock gate；release bundle 强制 vendor verifier；升级/不兼容/恢复 fixture 全部有报告 | 客户实际 Hermes 上游版本变化仍需按同一流程执行；I-10 消费已验证 provenance 和镜像 |

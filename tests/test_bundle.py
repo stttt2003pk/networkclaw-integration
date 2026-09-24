@@ -49,6 +49,11 @@ class BundleTests(unittest.TestCase):
             json.dumps({"patches": [{"name": "0001-local.patch", "sha256": hashlib.sha256(patch_data).hexdigest()}]}),
             encoding="utf-8",
         )
+        harness_scripts = self.harness / "scripts"
+        harness_scripts.mkdir()
+        (harness_scripts / "verify-hermes-vendor.py").write_text(
+            "raise SystemExit(0)\n", encoding="utf-8"
+        )
         self.output = self.base / "networkclaw-bundle.tar.gz"
 
     def tearDown(self) -> None:
@@ -241,6 +246,33 @@ class BundleTests(unittest.TestCase):
         (self.networkclaw / "change.go").write_text("package main\n", encoding="utf-8")
         rejected = self.build(self.base / "rejected.tar.gz", "--release", "--sources-lock", str(lock))
         self.assertNotEqual(rejected.returncode, 0)
+
+    def test_release_is_blocked_when_harness_vendor_verifier_fails(self) -> None:
+        for root in (self.networkclaw, self.harness, self.integration):
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+            subprocess.run(["git", "-C", str(root), "-c", "user.name=Test", "-c",
+                            "user.email=test@example.invalid", "commit", "-qm", "baseline"], check=True)
+
+        sys.path.insert(0, str(ROOT / "tools"))
+        try:
+            from source_tree import tree_hash
+        finally:
+            sys.path.pop(0)
+        lock = self.base / "release-lock.yaml"
+        lock_data = ["schema_version: 1", "mode: checkout"]
+        for name, root in (("networkclaw", self.networkclaw), ("harness", self.harness), ("integration", self.integration)):
+            commit = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+            lock_data.extend((f"{name}:", "  repository: https://example.invalid/source.git", f"  commit: {commit}", f"  tree_sha256: {tree_hash(root)}"))
+        lock.write_text("\n".join(lock_data) + "\n", encoding="utf-8")
+        (self.harness / "scripts/verify-hermes-vendor.py").write_text(
+            "raise SystemExit('injected vendor verification failure')\n", encoding="utf-8"
+        )
+        rejected_output = self.base / "blocked-release.tar.gz"
+        rejected = self.build(rejected_output, "--release", "--sources-lock", str(lock))
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("vendor verification failed", rejected.stderr)
+        self.assertFalse(rejected_output.exists())
 
     def test_payload_hash_is_checked_after_sidecar_is_updated(self) -> None:
         result = self.build()

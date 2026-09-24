@@ -111,6 +111,16 @@ def validate_release(identities: dict[str, dict[str, Any]], lock_path: Path) -> 
         identity["customized"] = False
 
 
+def verify_harness_vendor(harness_root: Path) -> None:
+    verifier = harness_root / "scripts" / "verify-hermes-vendor.py"
+    if not verifier.is_file():
+        raise ValueError("release source Harness is missing scripts/verify-hermes-vendor.py")
+    try:
+        subprocess.run([sys.executable, str(verifier)], cwd=harness_root, check=True)
+    except subprocess.CalledProcessError as exc:
+        raise ValueError("Harness Hermes vendor verification failed; release bundle is blocked") from exc
+
+
 def hermes_metadata(harness_root: Path) -> dict[str, Any]:
     source_file = harness_root / "upstream" / "hermes-source.json"
     vendor_manifest = harness_root / "upstream" / "hermes-vendor-manifest.json"
@@ -268,6 +278,7 @@ def main() -> int:
         for name, root in roots.items():
             identities[name], file_sets[name] = source_identity(name, root, markers[name])
         if args.release:
+            verify_harness_vendor(roots["harness"])
             lock_path = args.sources_lock
             if not lock_path.is_absolute():
                 lock_path = roots["integration"] / lock_path

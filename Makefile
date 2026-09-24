@@ -1,4 +1,4 @@
-.PHONY: doctor bootstrap dev-up dev-down restart-go restart-harness logs collect-diagnostics resolve-sources validate-contracts test integration-test combination-matrix fault-fixtures provider-stub bundle verify-bundle bundle-self-test ci-test image security-scan
+.PHONY: doctor bootstrap dev-up dev-down restart-go restart-harness logs collect-diagnostics resolve-sources validate-contracts test integration-test combination-matrix fault-fixtures provider-stub bundle verify-bundle bundle-self-test ci-test image security-scan vendor-status vendor-compat-test
 
 SHELL := /bin/sh
 BUNDLE_OUTPUT ?= .integration-state/artifacts/networkclaw-bundle.tar.gz
@@ -70,6 +70,12 @@ ci-test:
 
 security-scan:
 	@./ci/ubuntu-22.04/security-scan.sh "$(IMAGE_ARCHIVE)"
+
+vendor-status:
+	@.venv/bin/python ./tools/vendor_status.py
+
+vendor-compat-test:
+	@.venv/bin/python ./tools/vendor_compat_test.py $(VENDOR_COMPAT_ARGS)
 
 image:
 	@python3.12 ./ci/ubuntu-22.04/build-artifacts.py
