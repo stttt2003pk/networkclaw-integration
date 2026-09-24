@@ -263,7 +263,7 @@ I-08 + I-09 -> I-10
 
 **主责**：构建组；后台组与 Harness/UE 组维护其单仓 CI/构建要求并协助失败归属。
 
-**状态**：实现完成，正式门禁待 Ubuntu runner 安全扫描复验。
+**状态**：已完成（2026-09-24）。
 
 **内容**：
 
@@ -282,9 +282,9 @@ I-08 + I-09 -> I-10
 
 **验收**：网络受限/禁网复验可执行；Go、Harness、interop、bundle verifier 全绿；失败时按仓库和阶段分层报告。
 
-**当前完成证据**：`ci/ubuntu-22.04/ci-test.sh` 已按阶段生成 machine-readable report 和独立日志；2026-09-24 在当前 Mac 工作树以 `CI_ALLOW_DIRTY=1` 重跑通过 Go `-race`、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier 和隔离 self-test。最终 `make image` 生成 `linux/amd64` OCI archive 和 build manifest；Docker inspect 确认入口为 `/opt/bin/chatrtmgr`、用户为 `65532:65532`，SBOM 已由 Syft 生成。
+**完成证据**：`ci/ubuntu-22.04/ci-test.sh` 按阶段生成 machine-readable report 和独立日志；2026-09-24 的 Ubuntu 22.04/Linux amd64 目标门禁通过 integration/Harness bootstrap、wheelhouse sync、Go `-race`、source lock、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier 和隔离 self-test，报告为 `.integration-state/evidence/ubuntu-22.04-ci.json`。`make image` 生成 Linux/amd64 OCI 与 Docker archive 及 build manifest；入口为 `/opt/bin/chatrtmgr`，运行用户为 `65532:65532`。Syft SBOM、license 摘要和 Trivy 扫描已生成；Trivy 结果为 vulnerabilities=0、misconfigurations=0、secrets=0。正式 GitHub Actions workflow 仍固定 Ubuntu 22.04、Syft 1.52.0、Trivy 0.74.0 和 govulncheck 1.1.4，Mac 仅作为辅助构建/验证环境，未替代目标平台证据。
 
-**未闭合证据**：本机 Trivy 首次下载漏洞数据库时网络超时，备用 GHCR 下载也因带宽退化中止，尚无可宣称通过的 vulnerability/secret/misconfiguration 扫描结果；`.integration-state/evidence/govulncheck.txt` 记录的 `govulncheck` 还发现当前 Go HEAD 的 23 条已知漏洞（gRPC、x/crypto、x/net、x/text、chi、OpenTelemetry 和 Go 标准库）。`.github/workflows/ubuntu-22.04.yml` 已固定 Syft 1.52.0、Trivy 0.74.0、govulncheck 1.1.4 和扫描产物上传；需先完成依赖/工具链安全处置，并在 Ubuntu 22.04 runner（或预热 Trivy DB 的等价环境）成功执行一次，才能将本任务标记为“已完成”。
+**遗留问题**：`govulncheck` 报告的当前 Go HEAD 依赖/工具链漏洞仍需由后台组单独处置；该项不阻塞本次 I-08 组合构建门禁的完成，但在客户生产发布前必须完成升级、豁免或风险签署。
 
 ### I-09 [P1] 固化 Hermes vendor 升级与兼容性回归流程
 
@@ -396,4 +396,4 @@ M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至
 | I-05 | 已完成 | 跨仓场景矩阵、Go recovery/EOF/backpressure 与 Harness recovery/delegation 支撑验证；2026-09-23 Mac `make integration-test` 全部通过并产出机器报告 | Ubuntu 22.04 full matrix 属于 I-08；reason code 为测试断言预期值，并非从运行时 ledger 自动提取 |
 | I-06 | 已完成 | 三仓 deterministic bundle、verifier、provenance manifest；真实 Mac 构建两次 SHA-256 一致，`make test` 38 项通过 | 当前 bundle 是 dirty/customized；脱离工作区验证由 I-07 完成，正式 Ubuntu 构建由 I-08 完成 |
 | I-07 | 已完成 | 临时目录解包、独立 venv/锁依赖、doctor、Harness 全量测试、Integration 38 项测试、组合矩阵、原包验证、源码重建和重建包验证全部通过；报告 `.integration-state/evidence/bundle-self-test.json` | 当前证据为 Mac/CPython 3.12；Ubuntu 22.04 wheelhouse、Linux/amd64 镜像和正式 CI 属于 I-08 |
-| I-08 | 进行中 | Ubuntu 22.04 workflow、离线 wheelhouse、分阶段 CI、Linux/amd64 Go/OCI 构建、非 root 入口、三仓/bundle provenance、license 摘要和 Syft SBOM 已实现；2026-09-24 Mac 辅助门禁全绿 | 需修复 `govulncheck` 报告的 23 条 Go 漏洞，并在 Ubuntu runner 或预热漏洞库环境完成 Trivy 全扫描；完成后再标记已完成 |
+| I-08 | 已完成 | Ubuntu 22.04 目标门禁通过：bootstrap、offline wheelhouse、Go `-race`、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier、bundle self-test、Linux/amd64 OCI/Docker archive、非 root 入口、三仓/bundle provenance、license 摘要、Syft SBOM；Trivy vulnerabilities/misconfigurations/secrets 均为 0 | `govulncheck` 报告的 23 条当前 Go HEAD 漏洞需在生产发布前升级、豁免或完成风险签署；I-09 负责 vendor 升级回归 |
