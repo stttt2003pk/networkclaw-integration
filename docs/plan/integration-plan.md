@@ -43,7 +43,7 @@
 | 后台组 | NetworkClaw Go 后台、Host Protocol Go 侧实现与单仓测试；配合跨仓问题定位 | 在 Integration 复制 Go 业务实现 |
 | Harness/UE 组 | Harness、Hermes vendor、Python 侧协议实现与单仓测试；vendor 升级和回退 | 在 Integration 维护第二份 Harness/vendor 源码 |
 | 构建组 | Integration 工具、组合验收、bundle/manifest、Ubuntu CI 和镜像构建 | 直接修改 Go/Harness 权威源码；需要改动时回到对应仓库 |
-| 部署组 | 消费已验证 image/bundle/manifest，维护部署、rollout、回滚和运行手册 | 自行拼装三仓源码或绕过构建 manifest |
+| 部署组 | 消费已验证 image/bundle/manifest，维护首次部署配置、运行调试和必要的版本切换说明 | 自行拼装三仓源码或绕过构建 manifest |
 
 每项任务由一个团队主责，其他团队按协议、源码或部署边界协作；代码合并始终回到其权威仓库。
 
@@ -297,8 +297,8 @@ I-08 + I-09 -> I-10
 - vendor 更新只在 `networkclaw-harness` 执行：同步、patch、allowlist、hash、runtime closure、Harness tests。
 - integration 提供 `vendor-status`、`vendor-compat-test` 和组合回归入口。
 - 记录上游 ref、patch series、vendor tree hash、协议变化和升级风险。
-- 失败时阻止 bundle/image 生成，除非显式生成标记为实验性的 custom artifact。
-- 支持回滚到上一份已验证的 Harness source lock。
+- vendor 变更后先验证 Harness 单仓测试，再运行跨仓组合矩阵和 bundle/image provenance 检查；验证失败时报告具体阶段并阻止该变更进入正式交付。
+- 保留上一份已验证的 Harness source lock，便于需要时恢复组合基线；不要求为非生产环境建设独立、复杂的自动回滚机制。
 
 **产物**：
 
@@ -307,30 +307,32 @@ I-08 + I-09 -> I-10
 - `docs/vendor-upgrade.md`
 - vendor upgrade report。
 
-**验收**：至少用一次 vendor 版本变化或等价 fixture 演示升级、失败、回滚和重跑全套组合验收。
+**验收**：至少用一次 vendor 版本变化或等价 fixture 演示升级前后 provenance、Harness 测试和组合验收；注入一次不兼容结果，确认门禁能定位失败并阻止生成正式交付输入。验证通过后 source lock 可切换到新基线；保留旧 lock 作为人工恢复依据。
 
-### I-10 [P1] 固化部署消费、rollout、回滚和客户交接
+### I-10 [P1] 固化首次部署、运行调试和客户交接
 
-**依赖**：I-08；生产部署前还需 I-09 的 vendor provenance。
+**依赖**：I-08。部署含有新的 Hermes vendor 版本时，同时要求 I-09 的兼容性验收和 provenance；不阻塞基于当前已验证版本的首次非生产部署。
 
-**主责**：部署组；构建组提供可验证 image/bundle/manifest 和回滚引用。
+**主责**：部署组；构建组提供可验证 image/bundle/manifest 和部署所需配置。
 
 **内容**：
 
-- 部署组优先消费 OCI image/digest，必要时消费 bundle 做现场构建或审计。
-- 提供 Docker/Compose/Helm/systemd 等客户实际需要的部署输入，不在部署脚本重拼源码。
-- staged rollout：single session → multi-session → cancel/steer → delegation → reconnect/failover。
-- 记录 image、bundle、manifest 的对应关系、回滚版本和 smoke/health/ready 验收。
-- 客户交接文档说明三个仓库的日常修改归属、联调、CI、vendor 升级和问题收集方式。
+- Kubernetes 是客户主要部署环境，优先提供可配置的 Helm chart 和首次安装说明；同时提供 Docker 命令与 Docker Compose，支持本地或单机验证。systemd 不纳入当前任务范围；本地联合调试继续使用 I-03 的工具直接启动服务。
+- 从 I-08 已验证的 OCI image/digest 和 build manifest 部署，不在部署脚本中重拼源码；说明镜像、bundle、三仓 commit/tree hash 之间的对应关系。
+- 验证首次部署路径：最小配置、镜像拉取、必需环境变量/Secret、持久化或外部依赖配置、Kubernetes Service/Ingress（如适用）、readiness/liveness probe 和部署后 smoke test。
+- 提供面向开发与运维的调试信息：查看 Go/Harness 日志、检查 Pod/容器状态与 probe、收集脱敏诊断、定位启动/配置/依赖错误；本地调试入口链接到 `docs/local-development.md`。
+- Kubernetes 原生 rollout 能力作为平台已有能力使用，不额外建设复杂 staged rollout 编排；记录基本版本切换/回退命令即可，非生产阶段不以自动回滚系统为验收重点。
+- 客户交接文档说明三仓日常修改归属、联合调试、CI/build manifest、首次部署、常见故障定位和问题收集方式。
 
 **产物**：
 
-- `deploy/`
+- `deploy/helm/`（首要交付）
+- `deploy/docker/`、`deploy/compose/`
 - `docs/deployment.md`
 - `docs/customer-handoff.md`
-- rollout/runbook 与 rollback procedure。
+- 首次部署与调试 runbook，附简要 Kubernetes 版本切换/回退说明。
 
-**验收**：部署组可以只依赖 integration 产物完成部署；能按 manifest 回滚到上一版本；不需要理解 Harness 内部 Agent loop。
+**验收**：部署人员可仅依据 integration 交付的镜像、manifest、Helm chart 和文档，在客户 Kubernetes 非生产环境完成首次安装并通过 readiness/liveness 与 smoke test；能够查看 Go/Harness 日志、收集脱敏诊断并按 runbook 定位常见启动故障。Docker/Compose 路径可完成本地或单机 smoke。无需自行拼装源码或理解 Harness 内部 Agent loop；不要求构建独立灰度/自动回滚系统。
 
 ## 任务优先级
 

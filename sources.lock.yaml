@@ -14,7 +14,7 @@ integration:
   repository: https://github.com/stttt2003pk/networkclaw-integration.git
   ref: refs/heads/main
   commit: "6e8e69a15f964a2332e1ef7da9553c6766c78db1"
-  tree_sha256: "ef4d138aaa6671f6e157528cb8f573a735aa75b604d753cd358eb61eccbd456f"
+  tree_sha256: "119ea56cbab28f502319c969f585a033b5496614a77d4458a54639270641ef9d"
 protocol:
   version: "1.0"
 target:
