@@ -54,6 +54,11 @@ workspace/
 
 Manifest 至少记录：bundle 版本、三个源码树 hash、可用时的 Git commit、dirty 状态/diff hash、Harness vendor tree hash、Host Protocol 版本、目标平台和 customized 状态。源码包没有 `.git` 时，tree hash 仍必须可生成；Git commit 是可选 provenance，不是客户交付的前置条件。
 
+Docker HUB 连接很慢，可以考虑使用一些CN国内镜像源。
+py pip 源官方也不太稳，也可以考虑使用一些国内镜像源。
+对于linux ubuntu等rpm或者apt源 也可以设置成CN国内镜像源，方便调试。
+
+
 ## Vendor 升级
 
 不要直接在本仓库编辑 `networkclaw-harness/vendor/hermes`。先在 Harness 仓库执行 Hermes 同步、patch、vendor 验证和 Harness 回归，再在本仓库更新 `sources.lock.yaml` 并运行组合验收。

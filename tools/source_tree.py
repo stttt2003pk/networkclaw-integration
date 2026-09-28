@@ -12,7 +12,7 @@ import subprocess
 SKIP_DIRS = {
     ".git", ".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache",
     ".ruff_cache", "node_modules", "dist", "build", "target", ".next", "bin",
-    ".integration-state", "artifacts", "tmp", "logs", "htmlcov", ".cache",
+    ".integration-state", "artifacts", "tmp", "htmlcov", ".cache",
     ".codebase-memory",
 }
 SKIP_FILES = {".DS_Store"}

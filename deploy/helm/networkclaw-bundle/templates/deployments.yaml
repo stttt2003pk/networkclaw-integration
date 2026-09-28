@@ -1,0 +1,382 @@
+{{- $image := include "networkclaw-bundle.image" . -}}
+{{- $namespace := include "networkclaw-bundle.namespace" . -}}
+{{- $chatrtmgr := printf "%s-chatrtmgr" (include "networkclaw-bundle.fullname" .) -}}
+{{- $secret := .Values.secrets.existingSecret -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "networkclaw-bundle.fullname" . }}-web2
+  labels:
+    {{- include "networkclaw-bundle.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web2
+spec:
+  replicas: {{ .Values.replicas.web2 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: web2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/part-of: networkclaw-bundle
+        app.kubernetes.io/component: web2
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: web2
+          image: {{ $image | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [/opt/bin/web2-server]
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.web2.httpPort }}
+          env:
+            - name: NETWORKCLAW_WEB2_LOBBY_URL
+              value: {{ printf "http://%s-lobby:%d" (include "networkclaw-bundle.fullname" .) (.Values.service.lobby.httpPort | int) | quote }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources.web2 | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "networkclaw-bundle.fullname" . }}-chatrtmgr
+  labels:
+    {{- include "networkclaw-bundle.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chatrtmgr
+  {{- with include "networkclaw-bundle.provenanceAnnotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicas.chatrtmgr }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: chatrtmgr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/part-of: networkclaw-bundle
+        app.kubernetes.io/component: chatrtmgr
+      {{- with include "networkclaw-bundle.provenanceAnnotations" . }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: chatrtmgr
+          image: {{ $image | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.service.chatrtmgr.grpcPort }}
+            - name: metrics
+              containerPort: {{ .Values.service.chatrtmgr.metricsPort }}
+          env:
+            - name: CHATRTMGR_DISCOVERY_TYPE
+              value: {{ .Values.discovery.type | quote }}
+            {{- if eq .Values.discovery.type "etcd" }}
+            - name: CHATRTMGR_ETCD_ENDPOINTS
+              value: {{ .Values.discovery.etcdEndpoints | quote }}
+            - name: CHATRTMGR_ETCD_PREFIX
+              value: {{ .Values.discovery.etcdPrefix | quote }}
+            {{- end }}
+            {{- if eq .Values.discovery.type "k8s" }}
+            - name: CHATRTMGR_K8S_NAMESPACE
+              value: {{ $namespace | quote }}
+            - name: CHATRTMGR_K8S_SERVICE_NAME
+              value: {{ $chatrtmgr | quote }}
+            - name: CHATRTMGR_K8S_PORT_NAME
+              value: {{ .Values.discovery.portName | quote }}
+            {{- end }}
+            - name: CHATRTMGR_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CHATRTMGR_GRPC_ADDR
+              value: "$(CHATRTMGR_POD_IP):{{ .Values.service.chatrtmgr.grpcPort }}"
+            - name: CHATRTMGR_PROCESS_TARGET
+              value: gateway
+            - name: CHATRTMGR_GATEWAY_BINARY_PATH
+              value: {{ .Values.harness.command | quote }}
+            - name: CHATRTMGR_SOCKET_DIR
+              value: /tmp/ongrid/sockets
+            - name: HOME
+              value: /tmp/ongrid
+            - name: CHATRTMGR_LOG_LEVEL
+              value: {{ .Values.logging.level | quote }}
+            - name: CHATRTMGR_LOG_FORMAT
+              value: json
+            - name: NETWORKCLAW_GATEWAY_PROFILE
+              value: {{ .Values.harness.profile | quote }}
+            - name: NETWORKCLAW_HARNESS_PROFILE
+              value: {{ .Values.harness.profile | quote }}
+            - name: NETWORKCLAW_HARNESS_PROVIDER_MODE
+              value: live
+            - name: CHATSVC_REDIS_ADDR
+              value: {{ .Values.redis.address | quote }}
+            - name: CHATSVC_LOBBY_URL
+              value: {{ printf "http://%s-lobby:%d" (include "networkclaw-bundle.fullname" .) (.Values.service.lobby.httpPort | int) | quote }}
+            - name: ONGRID_OTEL_ENDPOINT
+              value: ""
+            {{- if .Values.provider.baseUrl }}
+            - name: OPENAI_BASE_URL
+              value: {{ .Values.provider.baseUrl | quote }}
+            {{- else if $secret }}
+            - name: OPENAI_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: OPENAI_BASE_URL
+                  optional: true
+            {{- end }}
+            {{- if $secret }}
+            - name: OPENAI_MODEL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: OPENAI_MODEL
+                  optional: true
+            - name: OPENAI_MODELS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: OPENAI_MODELS
+                  optional: true
+            - name: NETWORKCLAW_HARNESS_ALLOWED_MODELS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: NETWORKCLAW_HARNESS_ALLOWED_MODELS
+                  optional: true
+            {{- end }}
+            {{- if .Values.provider.allowedEgressHosts }}
+            - name: NETWORKCLAW_HARNESS_ALLOWED_EGRESS_HOSTS
+              value: {{ .Values.provider.allowedEgressHosts | quote }}
+            {{- end }}
+            {{- if $secret }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ .Values.secrets.openaiApiKey }}
+                  optional: true
+            {{- end }}
+          volumeMounts:
+            - name: runtime-tmp
+              mountPath: /tmp/ongrid
+          readinessProbe:
+            grpc:
+              port: {{ .Values.service.chatrtmgr.grpcPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: {{ .Values.service.chatrtmgr.grpcPort }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources.chatrtmgr | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+      volumes:
+        - name: runtime-tmp
+          {{- if .Values.harness.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.harness.existingClaim | quote }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "networkclaw-bundle.fullname" . }}-lobby
+  labels:
+    {{- include "networkclaw-bundle.labels" . | nindent 4 }}
+    app.kubernetes.io/component: lobby
+  {{- with include "networkclaw-bundle.provenanceAnnotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicas.lobby }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: lobby
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/part-of: networkclaw-bundle
+        app.kubernetes.io/component: lobby
+      {{- with include "networkclaw-bundle.provenanceAnnotations" . }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "networkclaw-bundle.fullname" . }}-lobby
+      automountServiceAccountToken: true
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: lobby
+          image: {{ $image | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [/opt/bin/lobby]
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.lobby.httpPort }}
+            - name: metrics
+              containerPort: {{ .Values.service.lobby.metricsPort }}
+          env:
+            - name: DEV_ENV
+              value: dev
+            - name: ONGRID_HTTP_ADDR
+              value: ":{{ .Values.service.lobby.httpPort }}"
+            - name: ONGRID_METRICS_ADDR
+              value: ":{{ .Values.service.lobby.metricsPort }}"
+            - name: ONGRID_DB_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: ONGRID_DB_PORT
+              value: {{ .Values.database.port | quote }}
+            - name: ONGRID_DB_USER
+              value: {{ .Values.database.user | quote }}
+            - name: ONGRID_DB_NAME
+              value: {{ .Values.database.name | quote }}
+            - name: ONGRID_DB_SSLMODE
+              value: {{ .Values.database.sslMode | quote }}
+            - name: ONGRID_REDIS_ADDR
+              value: {{ .Values.redis.address | quote }}
+            - name: ONGRID_DISCOVERY_TYPE
+              value: {{ .Values.discovery.type | quote }}
+            {{- if eq .Values.discovery.type "etcd" }}
+            - name: ONGRID_ETCD_ENDPOINTS
+              value: {{ .Values.discovery.etcdEndpoints | quote }}
+            - name: ONGRID_ETCD_PREFIX
+              value: {{ .Values.discovery.etcdPrefix | quote }}
+            {{- end }}
+            {{- if eq .Values.discovery.type "k8s" }}
+            - name: ONGRID_K8S_NAMESPACE
+              value: {{ $namespace | quote }}
+            - name: ONGRID_K8S_SERVICE_NAME
+              value: {{ $chatrtmgr | quote }}
+            - name: ONGRID_K8S_PORT_NAME
+              value: {{ .Values.discovery.portName | quote }}
+            {{- end }}
+            - name: ONGRID_HARNESS_ENABLED
+              value: {{ .Values.harness.enabled | quote }}
+            - name: ONGRID_HARNESS_ROLLOUT_PERCENT
+              value: {{ .Values.harness.rolloutPercent | quote }}
+            - name: ONGRID_HARNESS_WORKSPACE_ROOT
+              value: {{ .Values.harness.workspaceRoot | quote }}
+            - name: ONGRID_LOG_LEVEL
+              value: {{ .Values.logging.level | quote }}
+            - name: ONGRID_LOG_FORMAT
+              value: json
+            {{- if .Values.auth.webOrigins }}
+            - name: ONGRID_WEB2_ORIGINS
+              value: {{ .Values.auth.webOrigins | quote }}
+            {{- end }}
+            {{- if .Values.auth.seedAdminEmail }}
+            - name: ONGRID_SEED_ADMIN_EMAIL
+              value: {{ .Values.auth.seedAdminEmail | quote }}
+            - name: ONGRID_SEED_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ .Values.auth.seedAdminPasswordSecretKey }}
+            {{- end }}
+            {{- if $secret }}
+            - name: ONGRID_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ .Values.database.passwordSecretKey }}
+            - name: ONGRID_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ .Values.redis.passwordSecretKey }}
+                  optional: true
+            - name: ONGRID_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ .Values.secrets.jwtSecret }}
+            - name: ONGRID_OIDC_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ .Values.secrets.oidcSecretKey }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources.lobby | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]

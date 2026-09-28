@@ -13,7 +13,7 @@ make image
 
 `ci/ubuntu-22.04/ci-test.sh` 分阶段执行 NetworkClaw 全量 `go test -race ./...`、Harness vendor/runtime 测试、Integration 测试、组合矩阵、bundle/manifest 校验和隔离 bundle self-test，并写入 `.integration-state/evidence/ubuntu-22.04-ci.json`。失败阶段保留在机器报告中，不把失败伪装为成功。
 
-`ci/ubuntu-22.04/build-artifacts.py` 使用 `GOOS=linux GOARCH=amd64 CGO_ENABLED=0` 构建 `lobby`、`chatrtmgr`、`chatsvc`，在 `--platform=linux/amd64 --network=none` 下构建离线 Harness/Go combined OCI image，并输出 OCI 发布归档、可供 Trivy `--input` 使用的 Docker archive sidecar、SHA-256 和 `build-manifest.json`。OCI 是发布输入，Docker archive 只用于扫描，不替代 OCI 产物。
+`ci/ubuntu-22.04/build-artifacts.py` 使用 `GOOS=linux GOARCH=amd64 CGO_ENABLED=0` 构建 `lobby`、`chatrtmgr`，在 `--platform=linux/amd64 --network=none` 下构建离线 Harness/Go combined OCI image，并输出 OCI 发布归档、可供 Trivy `--input` 使用的 Docker archive sidecar、SHA-256 和 `build-manifest.json`。OCI 是发布输入，Docker archive 只用于扫描，不替代 OCI 产物。chatrtmgr 的执行目标固定为 Harness Gateway，旧 chatsvc 仅作为隔离回退源码，不进入交付镜像。
 
 仓库中的 `.github/workflows/ubuntu-22.04.yml` 是 GitHub Actions 的实际入口；`ci/pipelines/github-actions.yml` 保留为可移植的 pipeline 模板。构建清单分别记录 Ubuntu 22.04 runner 和 Debian 12 Python runtime base，避免把 runtime OS 误标为 Ubuntu。
 

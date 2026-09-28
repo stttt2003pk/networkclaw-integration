@@ -6,7 +6,7 @@
 
 | 仓库 | 权威内容 | Integration 的使用方式 |
 | --- | --- | --- |
-| `networkclaw` | Go 后台、`cmd/chatsvc`、Go 测试 | 作为真实源码工作树构建 `chatsvc` |
+| `networkclaw` | Go 后台、chatrtmgr Gateway 路由、Go 测试 | 作为真实源码工作树构建 `lobby`、`chatrtmgr` |
 | `networkclaw-harness` | Python Host、Hermes runtime、`vendor/hermes`、Python 测试 | 通过 `python -m networkclaw_harness.host` 提供 JSONL 子进程 |
 | `networkclaw-integration` | 编排、组合验收、CI、bundle、部署输入 | 解析前两者并生成交付制品 |
 
@@ -21,8 +21,8 @@ Integration 不要求前两个仓库 clean，也不复制源码。源码路径�
 ## Host Protocol
 
 - 版本：`1.0`。
-- transport：Go `chatsvc` 通过 stdin/stdout 启动 Harness，双方交换 JSONL envelope；Harness 的 stdout 只能包含协议帧，诊断走 stderr。
-- 进程边界：Harness 由 `chatsvc` 拥有。`dev-up` 启动真实 Go `chatsvc`，并通过 `--harness-command` 指向 Integration 生成的 launcher；不要把 Harness 误建成独立 TCP 服务。
+- transport：chatrtmgr 直接启动 Harness Gateway，通过 UDS 交换 JSONL envelope；Harness 的 stdout 只能包含协议帧，诊断走 stderr。
+- 进程边界：Harness Gateway 由 chatrtmgr 按 `user_id` 亲和拥有；不要把 Harness 误建成独立 TCP 服务。旧 chatsvc 仅保留在隔离回退验收和历史读取兼容代码中，不进入生产事件路径。
 - 生命周期：`protocol.negotiate` 成功后才视为 Harness ready；`session.open`、`user.input`、`turn.cancel`、`turn.steer`、`session.lease.update` 等命令遵循 Harness 仓库的 catalog。
 - 终态：`turn.completed`、`turn.failed`、`turn.cancelled` 是终态事件；`execution_epoch` 用于 takeover fencing，旧 epoch 的控制帧必须被拒绝。
 - 终态 envelope/payload 由 `schemas/host-protocol-v1-terminal.schema.json` 约束：payload 必须包含 `outcome`、`end=true`、`reason_code`、`generation`；存在会话时携带 `execution_epoch`。`turn.failed` 可携带 `code`/`retryable`，runtime 元数据保持可选。事件类型和 outcome 必须一一对应。schema 来源对应 Harness `host/server.py::_frame` 的正规化行为及 Go `HarnessHandler` 的消费字段。
@@ -31,7 +31,11 @@ Integration 不要求前两个仓库 clean，也不复制源码。源码路径�
 
 Integration 管理 `.integration-state/`（可用 `state_dir` 覆盖）中的 binary、PID、socket、日志和诊断 artifact。停止时只清理它创建的进程和 socket，不删除三个源码仓库或持久 session workspace。可选 `NETWORKCLAW_HARNESS_FRAME_LOG` 只记录不含 payload 的 frame 元数据；request/session 标识使用进程随机密钥 HMAC 摘要。
 
-当前 Go 组合入口是 `cmd/chatsvc`，其 UDS socket 是本地 readiness 信号；Harness 协议协商由 `chatsvc` 启动阶段完成。由于 `chatsvc` 当前拥有 Harness 子进程，`restart-harness` 会有意重启拥有它的 `chatsvc`，以避免留下未受管理的 JSONL 管道。
+当前 Go 组合入口是 `cmd/chatrtmgr`，其 Gateway UDS socket 是本地 readiness 信号；Harness 协议协商由 Gateway 启动阶段完成。旧 chatsvc 不属于交付镜像或默认启动路径；Gateway 是唯一实时执行入口。
+
+实时事件合同：Harness execution path 只允许 canonical event envelope 以及
+`done`/`error` 控制帧。固定 chunk oneof 和 `harness.Project` 不得被生产消费者
+依赖，历史回放适配器必须显式标为 compatibility-only。
 
 ## 目标平台
 

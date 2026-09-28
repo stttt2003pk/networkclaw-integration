@@ -46,13 +46,13 @@ make doctor
 ```bash
 make dev-up
 make restart-go
-make restart-harness
+make restart-gateway
 make logs
 make bundle
 make dev-down
 ```
 
-`make restart-harness` 会重启其拥有者 chatsvc，因为 Harness 是 chatsvc 管理的 JSONL 子进程，而不是独立 daemon。Integration 状态和日志落在 `.integration-state/`。provider 本地配置从 NetworkClaw `.env` 读取（shell 环境优先），值不会进入日志。契约示例可通过 `make validate-contracts` 校验。
+`make restart-gateway` 会重启 chatrtmgr 管理的 Harness Gateway 进程。Gateway 通过 UDS + JSONL 承接 session 和事件；不会由 Integration 隐式启动 chatsvc。状态和日志落在 `.integration-state/`。provider 本地配置从 NetworkClaw `.env` 读取（shell 环境优先），值不会进入日志。契约示例可通过 `make validate-contracts` 校验。
 
 故障夹具和真实跨仓验收入口：
 
@@ -85,3 +85,5 @@ networkclaw-integration
 ```
 
 `networkclaw-bundle` 是构建产物，不是第四个长期维护源码仓库。客户可以继续维护三个仓库，也可以把 bundle 导入自己的单仓库。
+
+Kubernetes/Helm 首次安装、Docker Compose 本地验证和排障见 [`docs/deployment.md`](docs/deployment.md)；三仓日常协作与交付边界见 [`docs/customer-handoff.md`](docs/customer-handoff.md)。

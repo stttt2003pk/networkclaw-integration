@@ -1,0 +1,106 @@
+image:
+  # Use the exact OCI image produced by I-08. A digest is preferred for customer deployments.
+  repository: networkclaw
+  tag: dev
+  digest: ""
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+provenance:
+  bundleSha256: ""
+  networkclawCommit: ""
+  harnessCommit: ""
+  integrationCommit: ""
+
+replicas:
+  lobby: 1
+  chatrtmgr: 1
+  web2: 1
+
+service:
+  lobby:
+    type: ClusterIP
+    httpPort: 8080
+    metricsPort: 9100
+  chatrtmgr:
+    grpcPort: 50052
+    metricsPort: 9101
+  web2:
+    httpPort: 5174
+
+database:
+  host: postgres
+  port: 5432
+  user: ongrid
+  name: ongrid
+  sslMode: disable
+  passwordSecretKey: ONGRID_DB_PASSWORD
+
+redis:
+  address: redis:6379
+  passwordSecretKey: ONGRID_REDIS_PASSWORD
+
+discovery:
+  # k8s uses Service/Endpoints; etcd uses runtime registration and discovery.
+  type: k8s
+  etcdEndpoints: etcd:2379
+  etcdPrefix: /services
+  namespace: ""
+  portName: grpc
+
+secrets:
+  # Create this Secret out of band. The chart never renders secret values.
+  existingSecret: networkclaw-runtime
+  openaiApiKey: OPENAI_API_KEY
+  jwtSecret: ONGRID_JWT_SECRET
+  oidcSecretKey: ONGRID_OIDC_SECRET_KEY
+
+provider:
+  # OPENAI_BASE_URL is optional; when empty the Harness default is used.
+  baseUrl: ""
+  allowedEgressHosts: ""
+
+harness:
+  enabled: true
+  rolloutPercent: 100
+  profile: development
+  command: /opt/bin/networkclaw-harness
+  workspaceRoot: /tmp/ongrid/harness
+  # EmptyDir is for non-production first install. Use a prepared PVC when sessions must survive Pod replacement.
+  existingClaim: ""
+
+logging:
+  level: info
+
+auth:
+  # Comma-separated CSRF/CORS origins. Set to the customer UI origin before authenticated smoke.
+  webOrigins: ""
+  # Optional first-install test account; remove after smoke. Password comes from the existing Secret.
+  seedAdminEmail: ""
+  seedAdminPasswordSecretKey: ONGRID_SEED_ADMIN_PASSWORD
+
+ingress:
+  enabled: false
+  className: nginx
+  host: networkclaw.example.com
+  annotations: {}
+  tls: []
+
+resources:
+  lobby:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 1, memory: 512Mi}
+  chatrtmgr:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 1, memory: 2Gi}
+  web2:
+    requests: {cpu: 50m, memory: 32Mi}
+    limits: {cpu: 500m, memory: 128Mi}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault

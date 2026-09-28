@@ -78,6 +78,63 @@ class ProviderHandler(BaseHTTPRequestHandler):
             mode=self.server.mode, stream=stream,
         )
 
+        parent_delegation = self.server.mode in {"delegate", "delegate-failure"} and any(
+            message.get("role") == "user" and message.get("content") == "reply with a short fixture response"
+            for message in request.get("messages", [])
+        )
+        context_round = sum(message.get("role") == "tool" for message in request.get("messages", []))
+        latest_user = next((str(message.get("content") or "") for message in reversed(request.get("messages", [])) if message.get("role") == "user"), "")
+        self.context_summary = self.server.mode == "context" and not request.get("tools")
+        context_tool = self.server.mode == "context" and not latest_user.startswith("context warmup ") and context_round < 3 and not any(
+            "[CONTEXT" in str(message.get("content") or "") or "e06 compressed fixture" in str(message.get("content") or "")
+            for message in request.get("messages", [])
+        )
+        if request.get("tools") and (context_tool or ((self.server.mode in {"todo", "clarification", "usage"} or parent_delegation) and not any(
+            message.get("role") == "tool" for message in request.get("messages", [])
+        ))):
+            call = {"index": 0, "id": "call-parity-todo", "type": "function",
+                    "function": {"name": "todo_list", "arguments": json.dumps({
+                        "todos": [{"id": "parity-item", "content": "fixture task", "status": "pending"}],
+                    })}}
+            if context_tool:
+                call["id"] = f"call-context-{context_round}"
+                call["function"]["arguments"] = json.dumps({"todos": [
+                    {"id": f"context-{context_round}-{index}", "content": "fixture context details " * 160, "status": "pending"}
+                    for index in range(4)
+                ]})
+            if parent_delegation:
+                call = {"index": 0, "id": "call-e06-delegate", "type": "function",
+                        "function": {"name": "delegate_task", "arguments": json.dumps({
+                            "tasks": [{"goal": "e06-child-fail" if self.server.mode == "delegate-failure" else "e06-child-a"}, {"goal": "e06-child-b"}],
+                        })}}
+            elif self.server.mode == "clarification":
+                call = {"index": 0, "id": "call-e06-clarify", "type": "function",
+                        "function": {"name": "clarify", "arguments": json.dumps({
+                            "question": "Which fixture route should continue?", "choices": ["primary", "fallback"],
+                        })}}
+            if not stream:
+                self._json(200, {"id": "todo-fixture", "object": "chat.completion",
+                    "choices": [{"index": 0, "message": {"role": "assistant", "content": None,
+                        "tool_calls": [call]}, "finish_reason": "tool_calls"}]})
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.end_headers()
+            for delta, finish in (({"role": "assistant", "tool_calls": [call]}, None), ({}, "tool_calls")):
+                self.wfile.write(self._sse({"id": "todo-fixture", "object": "chat.completion.chunk",
+                    "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]}))
+            self.wfile.write(b"data: [DONE]\n\n")
+            self.wfile.flush()
+            return
+
+
+        if self.server.mode == "delegate-failure" and any(
+            "e06-child-fail" in str(message.get("content") or "") for message in request.get("messages", [])
+        ):
+            self._json(503, {"error": {"message": "fixture child failure", "type": "server_error", "code": "fixture_child_failure"}})
+            return
+        if self.server.mode in {"delegate", "delegate-failure"} and not parent_delegation:
+            time.sleep(0.2)
         if self.server.mode == "reset":
             self.server.ledger.record("provider.connection_reset", "provider_transport_reset", mode="reset")
             self.close_connection = True
@@ -120,8 +177,13 @@ class ProviderHandler(BaseHTTPRequestHandler):
             self.close_connection = True
             return
         count = 0
-        for chunk in _CHUNKS:
+        chunks = _CHUNKS
+        if getattr(self, "context_summary", False):
+            chunks = (chunks[0], {"choices": [{"delta": {"content": "interop-ok\ne06 compressed fixture\n" + "Preserve the fixture task and continue after context compression. " * 20}, "finish_reason": None}]}, chunks[-1])
+        for index, chunk in enumerate(chunks):
             payload = {"id": "networkclaw-fixture", "object": "chat.completion.chunk", "model": "fixture", **chunk}
+            if self.server.mode == "usage" and index == len(_CHUNKS) - 1:
+                payload["usage"] = {"prompt_tokens": 7, "completion_tokens": 3, "total_tokens": 10}
             try:
                 self.wfile.write(self._sse(payload))
                 self.wfile.flush()
@@ -132,6 +194,9 @@ class ProviderHandler(BaseHTTPRequestHandler):
             if self.server.mode == "slow":
                 time.sleep(self.server.delay_ms / 1000)
         try:
+            if self.server.mode == "usage":
+                self.wfile.write(self._sse({"id": "networkclaw-fixture", "object": "chat.completion.chunk", "model": "fixture", "choices": [], "usage": {"prompt_tokens": 7, "completion_tokens": 3, "total_tokens": 10}}))
+                self.wfile.flush()
             self.wfile.write(b"data: [DONE]\n\n")
             self.wfile.flush()
         except OSError:
@@ -140,9 +205,12 @@ class ProviderHandler(BaseHTTPRequestHandler):
         self.server.ledger.record("provider.response_sent", "provider_succeeded", mode=self.server.mode, chunk_count=count)
 
     def _completion(self) -> dict[str, object]:
+        content = "interop-ok"
+        if getattr(self, "context_summary", False):
+            content += "\ne06 compressed fixture\n" + "Preserve the fixture task and continue after context compression. " * 20
         return {
             "id": "networkclaw-fixture", "object": "chat.completion", "model": "fixture",
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": "interop-ok"}, "finish_reason": "stop"}],
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}],
         }
 
     @staticmethod
@@ -165,7 +233,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=0)
-    parser.add_argument("--mode", choices=("stream", "slow", "drop", "reset", "delay", "http-error", "malformed"), default="stream")
+    parser.add_argument("--mode", choices=("stream", "slow", "drop", "reset", "delay", "http-error", "malformed", "todo", "clarification", "usage", "context", "delegate", "delegate-failure"), default="stream")
     parser.add_argument("--delay-ms", type=int, default=50)
     args = parser.parse_args()
     try:

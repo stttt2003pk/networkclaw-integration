@@ -1,0 +1,34 @@
+{
+  "state_machine_version": "1.0",
+  "root": "turn",
+  "lineage_keys": ["parent_session_id", "parent_turn_id", "subagent_id", "allocation_id", "invocation_id", "interaction_id", "artifact_id"],
+  "nodes": {
+    "turn": {"events": ["turn.queued", "turn.started", "turn.completed", "turn.failed", "turn.cancelled"], "terminal": ["turn.completed", "turn.failed", "turn.cancelled"]},
+    "assistant": {"events": ["assistant.delta"], "terminal": []},
+    "delegation": {"events": ["delegation.requested", "delegation.resolved"], "terminal": ["delegation.resolved"]},
+    "subagent": {"events": ["subagent.start", "subagent.thinking", "subagent.text", "subagent_progress", "subagent.complete"], "terminal": ["subagent.complete"]},
+    "tool": {"events": ["tool.generating", "tool.started", "tool.progress", "tool.completed"], "terminal": ["tool.completed"]},
+    "plan": {"events": ["plan.updated"], "terminal": []},
+    "artifact": {"events": ["artifact.created"], "terminal": ["artifact.created"]},
+    "interaction": {"events": ["approval.requested", "approval.resolved", "clarification.requested", "clarification.resolved"], "terminal": ["approval.resolved", "clarification.resolved"]},
+    "diagnostic": {"events": ["heartbeat", "provider.retry", "context.started", "context.continued", "usage.updated", "grace.summary"], "terminal": []},
+    "finalizer": {"events": ["finalizer.fallback"], "terminal": ["finalizer.fallback"]}
+  },
+  "relations": [
+    {"parent": "turn", "child": "delegation", "via": "parent_turn_id"},
+    {"parent": "delegation", "child": "subagent", "via": "allocation_id + subagent_id"},
+    {"parent": "subagent", "child": "tool", "via": "parent_item_id + invocation_id"},
+    {"parent": "turn|subagent", "child": "plan", "via": "session_id + turn_id"},
+    {"parent": "turn|subagent|tool", "child": "artifact", "via": "artifact_id + parent_item_id"},
+    {"parent": "turn|tool", "child": "interaction", "via": "interaction_id + parent_item_id"},
+    {"parent": "turn|subagent", "child": "diagnostic", "via": "session_id + run_id + turn_id"}
+  ],
+  "projection_rules": {
+    "facts_before_summaries": true,
+    "out_of_order_events": "buffer by lineage, then order siblings by sequence",
+    "duplicate_event": "ignore after event_id has been applied",
+    "terminal_latch": "first terminal event per session_id/run_id wins; later events are stale audit",
+    "reasoning": "hidden unless explicit capability; summary may be shown without raw delta",
+    "heartbeat": "coalesce for display, retain ledger facts"
+  }
+}

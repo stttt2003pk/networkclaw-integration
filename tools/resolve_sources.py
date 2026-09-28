@@ -99,7 +99,7 @@ def resolve() -> dict[str, object]:
         "go_binary": go_binary,
         "state_dir": str(state_path),
         "provider_env_file": str(provider_env_path) if provider_env_path.is_file() else None,
-        "service_id": os.environ.get("NETWORKCLAW_SERVICE_ID", config.get("service_id", "integration-chatsvc")),
+        "service_id": os.environ.get("NETWORKCLAW_SERVICE_ID", config.get("service_id", "integration-gateway")),
         "startup_timeout_seconds": int(os.environ.get("NETWORKCLAW_STARTUP_TIMEOUT", config.get("startup_timeout_seconds", "15"))),
     }
     return result

@@ -10,7 +10,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,6 +102,31 @@ class ChatsvcReadinessTests(unittest.TestCase):
         self.assertEqual(env["OPENAI_API_KEY"], "shell-secret")
         self.assertEqual(env["OPENAI_BASE_URL"], "http://127.0.0.1:9123/v1")
         self.assertNotIn("file-secret", json.dumps(env))
+
+
+class FrontendStartupTests(unittest.TestCase):
+    def test_starts_web2_and_records_the_managed_process(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "NetworkClaw"
+            vite = source / "web2/node_modules/vite/bin/vite.js"
+            vite.parent.mkdir(parents=True)
+            vite.touch()
+            paths = dev.state_paths({"state_dir": str(Path(temp_dir) / "state")})
+            dev.ensure_dirs(paths)
+            process = MagicMock(pid=1234)
+            process.poll.return_value = None
+            response = MagicMock()
+            response.__enter__.return_value.status = 200
+
+            with patch("dev.shutil.which", return_value="/usr/bin/node"), \
+                    patch("dev.subprocess.Popen", return_value=process) as popen, \
+                    patch("dev.urlopen", return_value=response):
+                dev.start_frontend({"networkclaw": {"path": str(source)}}, paths)
+
+            command = popen.call_args.args[0]
+            self.assertEqual(command, ["/usr/bin/node", str(vite), "--host", "127.0.0.1", "--strictPort"])
+            self.assertEqual(popen.call_args.kwargs["cwd"], str(source / "web2"))
+            self.assertEqual(json.loads((paths["pids"] / "frontend.pid").read_text())["pid"], 1234)
 
 
 if __name__ == "__main__":

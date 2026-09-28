@@ -12,3 +12,6 @@ logs/
 *.log
 .DS_Store
 .idea/
+.env
+.env.local
+.env.kind

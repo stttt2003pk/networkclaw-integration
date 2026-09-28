@@ -84,8 +84,32 @@ def command_record(result: CommandResult) -> dict[str, Any]:
     }
 
 
+def cleanup_evidence() -> dict[str, Any]:
+    """Capture bounded post-matrix leak evidence for processes and test-owned temp paths."""
+    process_rows: list[dict[str, str]] = []
+    ps = subprocess.run(["ps", "-axo", "pid=,command="], capture_output=True, text=True, check=False)
+    for line in ps.stdout.splitlines():
+        fields = line.strip().split(None, 1)
+        if len(fields) != 2:
+            continue
+        pid, command = fields
+        if "networkclaw-harness" in command or "tests/fixtures/provider_stub/server.py" in command:
+            process_rows.append({"pid": pid, "command": command[:240]})
+    temp_roots: list[str] = []
+    for pattern in ("/tmp/gw-*", "/tmp/rtg-*", "/tmp/rtg-crash-*", "/tmp/ncg-*"):
+        temp_roots.extend(str(path) for path in sorted(Path("/tmp").glob(pattern.removeprefix("/tmp/"))))
+    sockets = [path for path in temp_roots if Path(path).is_socket()]
+    return {
+        "status": "clean" if not process_rows and not sockets else "leaks_detected",
+        "active_gateway_or_provider_processes": process_rows,
+        "test_temp_roots": temp_roots,
+        "socket_paths": sockets,
+    }
+
+
 def main() -> int:
     skip_real = os.environ.get("NETWORKCLAW_SKIP_REAL_INTEROP") == "1"
+    os.environ.setdefault("NETWORKCLAW_INTEGRATION_PATH", str(ROOT))
     REPORT_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
     networkclaw = resolve_source("networkclaw")
     harness = resolve_source("harness")
@@ -99,6 +123,23 @@ def main() -> int:
     commands.append(fixture)
 
     if not skip_real:
+        runtime_ledgers = REPORT_DIR / "event-e06-runtime"
+        runtime_ledgers.mkdir(parents=True, exist_ok=True, mode=0o700)
+        for mode in ("stream", "todo", "reset", "process-fixture", "delegate", "delegate-deny", "delegate-timeout", "delegate-failure", "clarification", "usage", "context"):
+            (runtime_ledgers / f"gateway-{mode}.json").unlink(missing_ok=True)
+        browser_report = REPORT_DIR / "event-e06-runtime-browser.json"
+        browser_report.unlink(missing_ok=True)
+        os.environ["NETWORKCLAW_RUNTIME_LEDGER_DIR"] = str(runtime_ledgers)
+        os.environ["NETWORKCLAW_RUNTIME_BROWSER_REPORT"] = str(browser_report)
+        commands.append(run_command(
+            "canonical-transport-preservation",
+            ["go", "test", "-json", "-race", "./internal/shared/harness", "./internal/chatrtmgr/forwarder",
+             "./internal/chatrtmgr/transport/grpc", "./internal/lobby/usecase",
+             "-run=Test(FrameCanonicalJSON|ConstructedFrameCanonicalJSON|GatewayCanonicalEnvelope|DecodeStreamChunk|ValidateCanonicalEvent)",
+             "-count=1"],
+            networkclaw,
+            parse_go=True,
+        ))
         commands.append(run_command(
             "go-cross-repository",
             ["go", "test", "-json", "-race", "./tests/integration/harnessinterop", "-count=1"],
@@ -106,9 +147,19 @@ def main() -> int:
             parse_go=True,
         ))
         commands.append(run_command(
+            "durable-child-replay-restart",
+            [sys.executable, str(ROOT / "tools/run-child-replay-acceptance.py")],
+            ROOT,
+        ))
+        commands.append(run_command(
+            "frontend-process-ledger",
+            [sys.executable, str(ROOT / "tools/check_event_process.py")],
+            ROOT,
+        ))
+        commands.append(run_command(
             "go-process-recovery",
             [
-                "go", "test", "-json", "-race", "./internal/chatsvc/harness",
+                "go", "test", "-json", "-race", "./internal/shared/harness",
                 "-run=TestPythonHarness_(TakeoverFencesOldOwner|SigkillThenReplacementEpoch|ParallelSessionsKeepResponsesCorrelated|KillDuringProviderThenReplacementResumesSameWorkspace)",
                 "-count=1",
             ],
@@ -118,7 +169,7 @@ def main() -> int:
         commands.append(run_command(
             "go-client-transport-support",
             [
-                "go", "test", "-json", "-race", "./internal/chatsvc/harness",
+                "go", "test", "-json", "-race", "./internal/shared/harness",
                 "-run=Test(Client_ChildEOFFailsAllPendingCalls|ClientPending_BoundsBufferedFrames)",
                 "-count=1",
             ],
@@ -157,6 +208,8 @@ def main() -> int:
         return result is not None and result.tests.get(test) == "pass"
 
     scenarios = [
+        {"id": "durable_child_authority_restart", "kind": "cross_process_postgresql", "command": "durable-child-replay-restart", "tests": [], "reason_codes": ["cross_tenant_rejected", "stale_epoch_rejected"]},
+        {"id": "legacy_gateway_parity_and_rollback", "kind": "cross_repository", "command": "go-cross-repository", "tests": ["TestLegacyGatewayVisibleContentParity/stream", "TestLegacyGatewayVisibleContentParity/reset", "TestLegacyGatewayVisibleContentParity/todo", "TestLegacyGatewayVisibleContentParity/fence"], "reason_codes": ["turn_timeout", "stale_epoch"]},
         {"id": "single_session_vertical_flow", "kind": "cross_repository", "command": "go-cross-repository", "tests": ["TestSingleSessionVerticalFlow"], "reason_codes": ["completed", "provider_succeeded"]},
         {"id": "multi_session_multiplexing", "kind": "cross_repository", "command": "go-cross-repository", "tests": ["TestProviderBackedSessionsMultiplexWithoutCrossTalk"], "reason_codes": ["completed"]},
         {"id": "same_session_admission_cancel_steer", "kind": "cross_repository", "command": "go-cross-repository", "tests": ["TestSameSessionAdmissionAndActiveControl"], "reason_codes": ["turn_already_active", "user_cancel"]},
@@ -181,6 +234,7 @@ def main() -> int:
         else:
             scenario["status"] = "passed" if result.passed else "failed"
 
+    cleanup = cleanup_evidence()
     report = {
         "schema_version": "1",
         "matrix": "networkclaw-go-harness-v1",
@@ -188,7 +242,8 @@ def main() -> int:
         "skip_real_interop": skip_real,
         "commands": [command_record(item) for item in commands],
         "scenarios": scenarios,
-        "status": "passed" if all(item.passed for item in commands) and all(item["status"] == "passed" for item in scenarios if not skip_real) else ("skipped" if skip_real else "failed"),
+        "cleanup": cleanup,
+        "status": "passed" if all(item.passed for item in commands) and cleanup["status"] == "clean" and all(item["status"] == "passed" for item in scenarios if not skip_real) else ("skipped" if skip_real else "failed"),
     }
     json_path = REPORT_DIR / "combination-matrix.json"
     json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -200,6 +255,7 @@ def main() -> int:
     markdown.extend(["", "Command evidence:", ""])
     for item in commands:
         markdown.append(f"- `{item.name}`: exit `{item.returncode}`, {item.duration_seconds:.3f}s")
+    markdown.extend(["", "Cleanup evidence:", "", f"- status: `{cleanup['status']}`", f"- active Gateway/provider processes: `{len(cleanup['active_gateway_or_provider_processes'])}`", f"- test socket paths: `{len(cleanup['socket_paths'])}`", f"- temporary roots: `{len(cleanup['test_temp_roots'])}`"])
     md_path = REPORT_DIR / "combination-matrix.md"
     md_path.write_text("\n".join(markdown) + "\n", encoding="utf-8")
     os.chmod(md_path, 0o600)

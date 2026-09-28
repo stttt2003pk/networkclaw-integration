@@ -58,8 +58,16 @@ def main() -> int:
         stage = Path(td)
         env = os.environ | {"GOOS": "linux", "GOARCH": "amd64", "CGO_ENABLED": "0"}
         run(["make", "-C", str(NETWORKCLAW), "build-coordinator", f"BIN_DIR={stage / 'bin'}"], env=env)
+        run(["go", "build", "-o", str(stage / "bin/web2-server"), str(ROOT / "tools/web2-server/main.go")],
+            env=env | {"GO111MODULE": "off"})
         context = stage / "context"
         (context / "bin").mkdir(parents=True)
+        web_source = NETWORKCLAW / "web2"
+        web_build = stage / "web2"
+        shutil.copytree(web_source, web_build, ignore=shutil.ignore_patterns(".env", ".env.*", "node_modules", "dist"))
+        run(["npm", "ci"], cwd=web_build)
+        run(["npm", "run", "build"], cwd=web_build)
+        shutil.copytree(web_build / "dist", context / "web2/dist")
         shutil.copytree(HARNESS, context / "harness", ignore=shutil.ignore_patterns(".git", ".venv", "__pycache__", "*.pyc"))
         image_wheels = context / "harness/offline/wheels"
         image_wheels.mkdir(parents=True, exist_ok=True)
@@ -109,7 +117,7 @@ def main() -> int:
         archive_names = subprocess.check_output(["tar", "-tf", str(image)], text=True).splitlines()
         archive_format = "oci" if "oci-layout" in archive_names else "docker"
         base_inspect = json.loads(subprocess.check_output([
-            "docker", "image", "inspect", BASE_IMAGE, "--format", "{{json .RepoDigests}}"
+            "docker", "image", "inspect", BASE_IMAGE_REF, "--format", "{{json .RepoDigests}}"
         ], text=True))
         if not base_inspect:
             raise RuntimeError("base image has no immutable RepoDigest")

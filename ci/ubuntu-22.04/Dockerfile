@@ -20,8 +20,9 @@ COPY --chown=networkclaw:networkclaw harness/src/ /opt/networkclaw-harness/src/
 COPY --chown=networkclaw:networkclaw harness/vendor/hermes/ /opt/networkclaw-harness/vendor/hermes/
 COPY --chown=networkclaw:networkclaw harness/upstream/ /opt/networkclaw-harness/upstream/
 COPY --chown=networkclaw:networkclaw bin/ /opt/bin/
+COPY --chown=networkclaw:networkclaw web2/dist/ /opt/networkclaw-web2/dist/
 COPY --chown=networkclaw:networkclaw harness-entrypoint /opt/bin/networkclaw-harness
 RUN chmod 0755 /opt/bin/networkclaw-harness
-ENV CHATSVC_HARNESS_COMMAND=/opt/bin/networkclaw-harness
+ENV CHATRTMGR_PROCESS_TARGET=gateway CHATRTMGR_GATEWAY_BINARY_PATH=/opt/bin/networkclaw-harness
 USER 65532:65532
 ENTRYPOINT ["/opt/bin/chatrtmgr"]

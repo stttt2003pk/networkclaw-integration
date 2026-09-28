@@ -45,12 +45,12 @@ python3 tools/fault-proxy.py --mode drop --after-frames 2 -- \
 
 源码路径配置由 `tools/resolve-sources.py` 统一解析，支持 `workspace.local.yaml` 中相对 integration 根目录的路径、绝对路径和 `NETWORKCLAW_PATH` / `HARNESS_PATH` 显式覆盖。也允许无 Git 元数据的源码包；dirty tree 用于本地开发，不会被拒绝。
 
-`make dev-up` 构建并启动 NetworkClaw 的 `cmd/chatsvc`，Harness 由 chatsvc 启动，使用 JSONL stdin/stdout 协议，不单独开放 TCP 端口。`make dev-down` 只停止 Integration 创建的 chatsvc 并移除 Integration 管理的 socket。`make restart-go` 和 `make restart-harness` 都会重启 chatsvc，因为 Harness 子进程和 JSONL 管道由 chatsvc 拥有；后者的名字表达调试意图，不代表 Harness 是独立服务。
+`make dev-up` 启动宿主机进程全栈：本地构建 `lobby`、`chatrtmgr`，由 chatrtmgr 以 `target=gateway` 管理按用户亲和的 Harness Gateway，并运行 NetworkClaw `web2` 前端。Gateway 通过 UDS + JSONL 承接 session 和事件。启动前需已安装 `NetworkClaw/web2` 的 npm 依赖。它连接已经安装并运行的本机 PostgreSQL（默认 `127.0.0.1:5432`）和 Redis（默认 `127.0.0.1:6379`），通过共享本地 registry 文件发现 chatrtmgr，不依赖 etcd 或 Docker Compose。`make dev-up` 返回成功时，前端 `http://localhost:5174/` 与 lobby API `http://127.0.0.1:8080` 均已就绪。`make dev-down` 只停止 Integration 启动的进程，不停止本机 PostgreSQL/Redis，也不触碰 Compose 栈。
 
 provider 环境默认读取 NetworkClaw 根目录的 `.env`（若存在），也可由 `provider_env_file` 或 `NETWORKCLAW_PROVIDER_ENV_FILE` 指定。已导出的 shell 环境优先于文件值；文件内容和变量值不会写入诊断或日志。
 
-默认状态目录是 `.integration-state/`，包含 chatsvc/Harness PID、binary、socket、logs 和诊断 JSON。Harness PID 和命令从 chatsvc 子进程树解析，用于 IDE attach 与诊断；停止时由 owning chatsvc 回收子进程。`harness-frames.jsonl` 只记录方向、协议版本、帧类型、字节数和进程内随机密钥生成的 request/session ID 短摘要，不记录 payload、transcript 或原始 ID；文件权限为 owner-only。该文件是协议帧元数据 artifact，不是可重放的完整 frame dump。
+默认状态目录是 `.integration-state/`，包含 Gateway/chatrtmgr PID、binary、UDS socket、logs 和诊断 JSON。`gateway-frames.jsonl` 只记录方向、协议版本、帧类型、字节数和进程内随机密钥生成的 request/session ID 短摘要，不记录 payload、transcript 或原始 ID；文件权限为 owner-only。该文件是协议帧元数据 artifact，不是可重放的完整 frame dump。
 
-`make logs` 跟踪 chatsvc 日志，`make collect-diagnostics` 生成环境/源码/PID/路径摘要。Integration 不创建/清理持久 session workspace，也不删除源码。
+`make logs` 跟踪 Gateway 日志，`make collect-diagnostics` 生成环境/源码/PID/UDS/分层状态摘要。Integration 不创建/清理持久 session workspace，也不删除源码。
 
 Mac 本地负责快速反馈和调试；最终 Linux/amd64 镜像仍由 Ubuntu 22.04 CI 构建。

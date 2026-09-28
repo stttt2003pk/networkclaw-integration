@@ -1,0 +1,6 @@
+apiVersion: v2
+name: networkclaw-bundle
+description: NetworkClaw combined runtime deployment for a verified Linux/amd64 image
+type: application
+version: 0.1.0
+appVersion: "bundle"

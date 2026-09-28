@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "networkclaw-bundle.fullname" . }}-web2
+  labels:
+    {{- include "networkclaw-bundle.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web2
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: web2
+  ports:
+    - name: http
+      port: {{ .Values.service.web2.httpPort }}
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "networkclaw-bundle.fullname" . }}-lobby
+  labels:
+    {{- include "networkclaw-bundle.labels" . | nindent 4 }}
+    app.kubernetes.io/component: lobby
+  {{- with include "networkclaw-bundle.provenanceAnnotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.lobby.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: lobby
+  ports:
+    - name: http
+      port: {{ .Values.service.lobby.httpPort }}
+      targetPort: http
+    - name: metrics
+      port: {{ .Values.service.lobby.metricsPort }}
+      targetPort: metrics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "networkclaw-bundle.fullname" . }}-chatrtmgr
+  labels:
+    {{- include "networkclaw-bundle.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chatrtmgr
+  {{- with include "networkclaw-bundle.provenanceAnnotations" . }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.service.chatrtmgr.metricsPort | quote }}
+    prometheus.io/path: /metrics
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "networkclaw-bundle.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: chatrtmgr
+  ports:
+    - name: grpc
+      port: {{ .Values.service.chatrtmgr.grpcPort }}
+      targetPort: grpc
+    - name: metrics
+      port: {{ .Values.service.chatrtmgr.metricsPort }}
+      targetPort: metrics

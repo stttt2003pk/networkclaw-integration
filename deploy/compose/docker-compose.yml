@@ -1,0 +1,197 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ongrid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ongrid}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.0.5
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --initial-advertise-peer-urls=http://etcd:2380
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-cluster=etcd=http://etcd:2380
+      - --initial-cluster-state=new
+      - --initial-cluster-token=networkclaw-compose
+    healthcheck:
+      test: [CMD, etcdctl, endpoint, health]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-ongrid}
+      PGDATABASE: ${POSTGRES_DB:-ongrid}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_MODELS: ${OPENAI_MODELS:-}
+    volumes:
+      - ${NETWORKCLAW_MIGRATIONS_DIR:-../../../networkclaw/internal/lobby/database/migrations}:/migrations:ro
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        psql -X -v ON_ERROR_STOP=1 -c 'CREATE TABLE IF NOT EXISTS networkclaw_compose_migrations (filename text PRIMARY KEY, sha256 text NOT NULL)'
+        set -- /migrations/*.up.sql
+        test -f "$$1"
+        for migration do
+          name="$${migration##*/}"
+          case "$$name" in *[!a-zA-Z0-9_.-]*) echo "invalid migration filename" >&2; exit 1;; esac
+          digest="$$(sha256sum "$$migration" | cut -d ' ' -f1)"
+          applied="$$(psql -X -v ON_ERROR_STOP=1 -At -c "SELECT sha256 FROM networkclaw_compose_migrations WHERE filename = '$$name'")"
+          if [ -n "$$applied" ]; then
+            test "$$applied" = "$$digest" || { echo "migration changed after application: $$name" >&2; exit 1; }
+            echo "already applied $$name"
+            continue
+          fi
+          echo "applying $$name"
+          psql -X -v ON_ERROR_STOP=1 -1 -f "$$migration"
+          psql -X -v ON_ERROR_STOP=1 -c "INSERT INTO networkclaw_compose_migrations (filename, sha256) VALUES ('$$name', '$$digest')"
+        done
+        models="$${OPENAI_MODELS:-$$OPENAI_MODEL}"
+        if [ -n "$$models" ]; then
+          configured=""
+          old_ifs="$$IFS"; IFS=,
+          for model in $$models; do
+            model="$$(printf '%s' "$$model" | tr -d '[:space:]')"
+            case "$$model" in *[!A-Za-z0-9._:-]*|'') echo "invalid OPENAI model" >&2; exit 1;; esac
+            psql -X -v ON_ERROR_STOP=1 -c \
+              "INSERT INTO catalog_models (id, provider, model_id, base_url, display_name, enabled, deployed) VALUES ('seed-openai-$$model', 'openai', '$$model', '', '$$model', true, true) ON CONFLICT (provider, model_id) DO NOTHING"
+            configured="$${configured:+$$configured,}'$$model'"
+          done
+          IFS="$$old_ifs"
+          psql -X -v ON_ERROR_STOP=1 -c \
+            "UPDATE catalog_models SET deployed = false WHERE id LIKE 'seed-openai-%' AND model_id NOT IN ($$configured)"
+        fi
+
+  chatrtmgr:
+    image: ${NETWORKCLAW_IMAGE:-networkclaw:ci-linux-amd64}
+    entrypoint: [/opt/bin/chatrtmgr]
+    init: true
+    depends_on:
+      etcd:
+        condition: service_healthy
+    environment:
+      CHATRTMGR_DISCOVERY_TYPE: etcd
+      CHATRTMGR_ETCD_ENDPOINTS: etcd:2379
+      CHATRTMGR_ETCD_PREFIX: /services
+      CHATRTMGR_GRPC_ADDR: chatrtmgr:50052
+      CHATRTMGR_PROCESS_TARGET: gateway
+      CHATRTMGR_GATEWAY_BINARY_PATH: /opt/bin/networkclaw-harness
+      CHATRTMGR_SOCKET_DIR: /tmp/ongrid/sockets
+      HOME: /tmp/ongrid
+      CHATRTMGR_LOG_FORMAT: json
+      CHATRTMGR_LOG_LEVEL: ${CHATRTMGR_LOG_LEVEL:-info}
+      NETWORKCLAW_GATEWAY_PROFILE: ${NETWORKCLAW_GATEWAY_PROFILE:-development}
+      NETWORKCLAW_HARNESS_PROFILE: ${NETWORKCLAW_HARNESS_PROFILE:-development}
+      NETWORKCLAW_HARNESS_PROVIDER_MODE: live
+      NETWORKCLAW_GATEWAY_SOCKET_DIR: /tmp/ongrid/sockets
+      NETWORKCLAW_HARNESS_FRAME_LOG: /tmp/ongrid/harness-frames.jsonl
+      ONGRID_HARNESS_WORKSPACE_ROOT: /tmp/ongrid/harness
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_MODELS: ${OPENAI_MODELS:-}
+      NETWORKCLAW_HARNESS_ALLOWED_MODELS: ${NETWORKCLAW_HARNESS_ALLOWED_MODELS:-}
+      NETWORKCLAW_HARNESS_ALLOWED_EGRESS_HOSTS: ${NETWORKCLAW_HARNESS_ALLOWED_EGRESS_HOSTS:-}
+    ports:
+      - "${CHATRTMGR_GRPC_PORT:-50052}:50052"
+      - "${CHATRTMGR_METRICS_PORT:-9101}:9101"
+    healthcheck:
+      test: [CMD, python, -c, "import socket; s=socket.create_connection(('chatrtmgr',50052),2); s.close()"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  lobby:
+    image: ${NETWORKCLAW_IMAGE:-networkclaw:ci-linux-amd64}
+    entrypoint: [/opt/bin/lobby]
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+      chatrtmgr:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DEV_ENV: dev
+      ONGRID_HTTP_ADDR: :8080
+      ONGRID_METRICS_ADDR: :9100
+      ONGRID_DB_HOST: postgres
+      ONGRID_DB_PORT: 5432
+      ONGRID_DB_USER: ${POSTGRES_USER:-ongrid}
+      ONGRID_DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      ONGRID_DB_NAME: ${POSTGRES_DB:-ongrid}
+      ONGRID_DB_SSLMODE: ${ONGRID_DB_SSLMODE:-disable}
+      ONGRID_REDIS_ADDR: redis:6379
+      ONGRID_DISCOVERY_TYPE: etcd
+      ONGRID_ETCD_ENDPOINTS: etcd:2379
+      ONGRID_ETCD_PREFIX: /services
+      ONGRID_HARNESS_ENABLED: ${ONGRID_HARNESS_ENABLED:-true}
+      ONGRID_HARNESS_ROLLOUT_PERCENT: ${ONGRID_HARNESS_ROLLOUT_PERCENT:-100}
+      ONGRID_HARNESS_WORKSPACE_ROOT: /tmp/ongrid/harness
+      ONGRID_JWT_SECRET: ${ONGRID_JWT_SECRET:?set ONGRID_JWT_SECRET}
+      ONGRID_OIDC_SECRET_KEY: ${ONGRID_OIDC_SECRET_KEY:-compose-oidc-key-change-me}
+      ONGRID_WEB2_ORIGINS: ${ONGRID_WEB2_ORIGINS:-http://localhost:5174}
+      ONGRID_SEED_ADMIN_EMAIL: ${ONGRID_SEED_ADMIN_EMAIL:-}
+      ONGRID_SEED_ADMIN_PASSWORD: ${ONGRID_SEED_ADMIN_PASSWORD:-}
+      ONGRID_LOG_LEVEL: ${ONGRID_LOG_LEVEL:-info}
+      ONGRID_LOG_FORMAT: json
+    ports:
+      - "${LOBBY_HTTP_PORT:-8080}:8080"
+      - "${LOBBY_METRICS_PORT:-9100}:9100"
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/readyz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  web2:
+    image: ${NETWORKCLAW_IMAGE:-networkclaw:ci-linux-amd64}
+    entrypoint: [/opt/bin/web2-server]
+    init: true
+    depends_on:
+      lobby:
+        condition: service_healthy
+    environment:
+      NETWORKCLAW_WEB2_LOBBY_URL: http://lobby:8080
+    ports:
+      - "${WEB2_HTTP_PORT:-5174}:5174"
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5174/readyz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres-data:

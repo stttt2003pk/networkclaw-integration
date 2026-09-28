@@ -1,0 +1,241 @@
+{
+  "inventory_version": "1.0",
+  "catalog_version": "networkclaw.events.v1",
+  "repository": "networkclaw-harness",
+  "source_root": "networkclaw-harness",
+  "notes": "All source paths are relative to the Harness repository; this inventory is evidence-only.",
+  "events": [
+    {
+      "name": "subagent.start",
+      "source_kind": "hermes_native",
+      "source_path": "vendor/hermes/tools/delegate_tool_progress.py",
+      "source_lines": "122-127,343-347",
+      "payload_fields": ["subagent_id", "parent_id", "task_index", "task_count", "goal", "depth", "parent_turn_id"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed",
+      "lineage_fields": ["parent_session_id", "parent_turn_id", "subagent_id", "allocation_id"]
+    },
+    {
+      "name": "subagent.complete",
+      "source_kind": "hermes_native",
+      "source_path": "vendor/hermes/tools/delegate_tool_child_run.py",
+      "source_lines": "705-715,875-907",
+      "payload_fields": ["subagent_id", "status", "summary", "failure_reason", "duration_seconds", "files_read", "files_written", "input_tokens", "output_tokens", "reasoning_tokens"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed",
+      "lineage_fields": ["parent_session_id", "parent_turn_id", "subagent_id", "allocation_id"]
+    },
+    {
+      "name": "subagent.text",
+      "source_kind": "hermes_native",
+      "source_path": "vendor/hermes/tools/delegate_tool_child_run.py",
+      "source_lines": "658-662",
+      "payload_fields": ["subagent_id", "preview"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed",
+      "lineage_fields": ["parent_session_id", "parent_turn_id", "subagent_id"]
+    },
+    {
+      "name": "subagent.thinking",
+      "source_kind": "hermes_native",
+      "source_path": "vendor/hermes/tools/delegate_tool_progress.py",
+      "source_lines": "365-368",
+      "payload_fields": ["subagent_id", "preview"],
+      "default_surface": "restricted",
+      "permission": "explicit_reasoning_capability",
+      "producer_status": "source_confirmed",
+      "lineage_fields": ["parent_session_id", "parent_turn_id", "subagent_id"],
+      "redaction": "default summary or hidden; never raw chain of thought"
+    },
+    {
+      "name": "subagent_progress",
+      "source_kind": "hermes_native_legacy_relay",
+      "source_path": "vendor/hermes/tools/delegate_tool_progress.py",
+      "source_lines": "110-117,370-378",
+      "payload_fields": ["subagent_id", "preview"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed",
+      "lineage_fields": ["parent_session_id", "parent_turn_id", "subagent_id"]
+    },
+    {
+      "name": "delegation.requested",
+      "source_kind": "host_adapter",
+      "source_path": "src/networkclaw_harness/runtime/delegation.py",
+      "source_lines": "72-91",
+      "payload_fields": ["allocation_id", "parent_session_id", "parent_turn_id", "task_index", "task_count", "depth", "requested_budget", "parent_generation"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed",
+      "lineage_fields": ["parent_session_id", "parent_turn_id", "allocation_id"]
+    },
+    {
+      "name": "delegation.resolved",
+      "source_kind": "host_derived",
+      "source_path": "src/networkclaw_harness/runtime/delegation.py",
+      "source_lines": "100-111,135-144,171-186",
+      "payload_fields": ["allocation_id", "decision", "child_session_id", "workspace_root", "budget", "parent_session_id", "parent_turn_id", "reason"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "host_derived_required",
+      "lineage_fields": ["parent_session_id", "parent_turn_id", "child_session_id", "allocation_id"]
+    },
+    {
+      "name": "tool.generating",
+      "source_kind": "hermes_native_callback",
+      "source_path": "vendor/hermes/agent/stream_delivery.py",
+      "source_lines": "336-338",
+      "payload_fields": ["invocation_id", "tool_name", "status"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed_callback",
+      "lineage_fields": ["session_id", "turn_id", "invocation_id", "parent_item_id"]
+    },
+    {
+      "name": "reasoning.delta",
+      "source_kind": "hermes_native_callback",
+      "source_path": "vendor/hermes/agent/stream_delivery.py",
+      "source_lines": "318-334",
+      "payload_fields": ["delta", "redaction", "visibility"],
+      "default_surface": "restricted",
+      "permission": "explicit_reasoning_capability",
+      "producer_status": "source_confirmed_callback",
+      "lineage_fields": ["session_id", "turn_id", "invocation_id"],
+      "redaction": "default hidden; bounded summary only"
+    },
+    {
+      "name": "context.started",
+      "source_kind": "harness_projection",
+      "native_source_path": "vendor/hermes/agent/conversation_compression.py",
+      "native_callback": "lifecycle/compacting status_callback",
+      "adapter_source_path": "src/networkclaw_harness/runtime/hermes_host_adapter.py",
+      "adapter_source_lines": "212-234",
+      "source_path": "src/networkclaw_harness/projection/events.py",
+      "source_lines": "293-299",
+      "payload_fields": ["status", "summary", "artifact_id", "version"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed"
+    },
+    {
+      "name": "grace.summary",
+      "source_kind": "harness_projection",
+      "source_path": "src/networkclaw_harness/projection/events.py",
+      "source_lines": "307-309",
+      "payload_fields": ["status", "summary", "reason_code", "fact_kind"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed"
+    },
+    {
+      "name": "finalizer.fallback",
+      "source_kind": "harness_projection",
+      "source_path": "src/networkclaw_harness/projection/events.py",
+      "source_lines": "310-312",
+      "payload_fields": ["status", "summary", "reason_code", "fact_kind"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed",
+      "terminal": true
+    },
+    {
+      "name": "context.continued",
+      "source_kind": "harness_projection",
+      "native_source_path": "vendor/hermes/agent/conversation_compression.py",
+      "native_callback": "_emit_compaction_done: status_callback(compacted, ...)",
+      "adapter_source_path": "src/networkclaw_harness/runtime/hermes_host_adapter.py",
+      "adapter_source_lines": "212-224",
+      "source_path": "src/networkclaw_harness/projection/events.py",
+      "source_lines": "293-299",
+      "payload_fields": ["status", "summary", "artifact_id", "version"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed"
+    },
+    {
+      "name": "checkpoint.updated",
+      "source_kind": "harness_projection",
+      "source_path": "src/networkclaw_harness/projection/events.py",
+      "source_lines": "300-302",
+      "payload_fields": ["status", "checkpoint_id", "artifact_manifest_hash"],
+      "default_surface": "diagnostic",
+      "permission": "operator",
+      "producer_status": "source_confirmed"
+    },
+    {
+      "name": "provider.attempt",
+      "source_kind": "harness_projection",
+      "source_path": "src/networkclaw_harness/projection/events.py",
+      "source_lines": "303-306",
+      "payload_fields": ["attempt", "provider", "model", "status", "duration_ms"],
+      "default_surface": "diagnostic",
+      "permission": "operator",
+      "producer_status": "source_confirmed"
+    },
+    {
+      "name": "provider.retry",
+      "source_kind": "harness_projection",
+      "source_path": "src/networkclaw_harness/projection/events.py",
+      "source_lines": "303-306",
+      "payload_fields": ["attempt", "provider", "model", "reason_code", "status"],
+      "default_surface": "user",
+      "permission": "session_participant",
+      "producer_status": "source_confirmed"
+    },
+    {
+      "name": "usage.updated",
+      "source_kind": "host_derived",
+      "source_path": "vendor/hermes/hermes_state_usage.py",
+      "source_lines": "17-21,277-303",
+      "payload_fields": ["input_tokens", "output_tokens", "reasoning_tokens", "estimated_cost_usd", "model", "provider"],
+      "default_surface": "restricted",
+      "permission": "billing_or_operator",
+      "producer_status": "host_derived_required",
+      "redaction": "summary only; no prompt or credentials"
+    },
+    {
+      "name": "moa.reference",
+      "source_kind": "hermes_native",
+      "source_path": "vendor/hermes/agent/moa_loop.py",
+      "source_lines": "930-933,1224-1230,1347-1349",
+      "payload_fields": ["label", "text", "index", "count"],
+      "default_surface": "diagnostic",
+      "permission": "operator",
+      "producer_status": "source_confirmed",
+      "redaction": "privacy mode may redact reference text"
+    },
+    {
+      "name": "moa.progress",
+      "source_kind": "hermes_native",
+      "source_path": "vendor/hermes/agent/moa_loop.py",
+      "source_lines": "1195-1197,1349",
+      "payload_fields": ["label", "refs_done", "refs_total"],
+      "default_surface": "diagnostic",
+      "permission": "operator",
+      "producer_status": "source_confirmed"
+    },
+    {
+      "name": "moa.phase",
+      "source_kind": "hermes_native",
+      "source_path": "vendor/hermes/agent/moa_loop.py",
+      "source_lines": "1231-1235,1350",
+      "payload_fields": ["aggregator", "phase", "refs_done", "refs_total"],
+      "default_surface": "diagnostic",
+      "permission": "operator",
+      "producer_status": "source_confirmed"
+    },
+    {
+      "name": "moa.aggregating",
+      "source_kind": "hermes_native",
+      "source_path": "vendor/hermes/agent/moa_loop.py",
+      "source_lines": "1233-1235,1351",
+      "payload_fields": ["aggregator", "ref_count"],
+      "default_surface": "diagnostic",
+      "permission": "operator",
+      "producer_status": "source_confirmed"
+    }
+  ]
+}

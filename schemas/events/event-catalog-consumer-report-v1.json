@@ -1,0 +1,89 @@
+{
+  "report_version": "1.0",
+  "catalog_version": "networkclaw.events.v1",
+  "canonical_event_count": 56,
+  "baseline_event_count": 36,
+  "extension_event_count": 20,
+  "harness": {
+    "baseline_event_count": 36,
+    "extension_event_count": 20,
+    "capabilities_source": "host/server.py:capabilities.report"
+  },
+  "transport": {
+    "lobby": "opaque canonical_event carrier with identity and size validation",
+    "unknown_events": "preserve-and-observe"
+  },
+  "consumers": {
+    "go_lobby": {
+      "explicit_handlers": [],
+      "unknown_bucket": "opaque canonical_event"
+    },
+    "web2": {
+      "explicit_handlers": [
+        "approval.requested",
+        "approval.resolved",
+        "artifact.created",
+        "assistant.delta",
+        "checkpoint.updated",
+        "clarification.requested",
+        "clarification.resolved",
+        "context.continued",
+        "context.started",
+        "delegation.requested",
+        "delegation.resolved",
+        "error",
+        "heartbeat",
+        "plan.updated",
+        "provider.attempt",
+        "provider.retry",
+        "reasoning.delta",
+        "subagent.complete",
+        "subagent.start",
+        "subagent.text",
+        "subagent.thinking",
+        "subagent_progress",
+        "tool.completed",
+        "tool.generating",
+        "tool.progress",
+        "tool.started",
+        "turn.cancelled",
+        "turn.completed",
+        "turn.controlled",
+        "turn.failed",
+        "turn.queued",
+        "turn.started",
+        "usage.updated",
+        "warning"
+      ],
+      "unknown_bucket": "process.unknownEvents",
+      "unhandled_by_explicit_projection": [
+        "capabilities.report",
+        "end",
+        "finalizer.fallback",
+        "grace.summary",
+        "health.status",
+        "metrics.snapshot",
+        "moa.aggregating",
+        "moa.phase",
+        "moa.progress",
+        "moa.reference",
+        "protocol.negotiated",
+        "request.accepted",
+        "session.closed",
+        "session.draining",
+        "session.lease.replaced",
+        "session.lease.revoked",
+        "session.lease.takeover",
+        "session.lease.updated",
+        "session.opened",
+        "shutdown.completed",
+        "subagent.completed",
+        "subagent.started"
+      ]
+    }
+  },
+  "drift": {
+    "errors": [],
+    "status": "ok"
+  }
+}

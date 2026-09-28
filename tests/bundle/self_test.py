@@ -243,10 +243,11 @@ def main() -> int:
         else:
             env = os.environ.copy()
             for key in list(env):
-                if key.startswith("NETWORKCLAW_") or key == "HARNESS_PATH":
+                if (key.startswith("NETWORKCLAW_") and key != "NETWORKCLAW_CHILD_DATABASE_URL") or key == "HARNESS_PATH":
                     env.pop(key)
             env["NETWORKCLAW_PATH"] = str(networkclaw)
             env["HARNESS_PATH"] = str(harness)
+            env["NETWORKCLAW_INTEGRATION_PATH"] = str(integration)
             env["NETWORKCLAW_WORKSPACE_FILE"] = str(integration / "workspace.local.yaml")
             env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
             wheelhouse = args.wheelhouse.resolve() if args.wheelhouse else None

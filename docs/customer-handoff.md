@@ -29,3 +29,11 @@ python3.12 integration/tests/bundle/self_test.py networkclaw-bundle.tar.gz \
 - Integration Python 依赖由 bundle 内 `integration/pyproject.toml` 固定版本声明；安装时需要 package index，或准备对应 wheelhouse。目标 Ubuntu CI 的离线 wheelhouse/base image 与禁网复验由 I-08 建立。
 - 组合矩阵依赖 Go toolchain、Harness Python 环境、bundle 中的源码和本地 loopback/socket 能力；provider stub 不需要真实模型 key。
 - 最终 OCI 镜像、Linux/amd64 artifact、SBOM 和安全扫描不是本地自测的产物，属于 I-08。
+
+## 三组协作与首次部署
+
+- 后台组在 `networkclaw` 修改 Go 服务与数据库 migration；Harness/UE 组在 `networkclaw-harness` 修改 Python、Hermes vendor；构建组在 `networkclaw-integration` 维护源码解析、组合测试、bundle、Ubuntu CI、镜像和部署输入。不要将 bundle 当成第四个长期源码仓库。
+- 日常本地联调按 [`docs/local-development.md`](local-development.md) 使用两个相邻源码工作树和 Integration `make dev-up`；组合变更运行 `make integration-test`。vendor 更新先按 [`docs/vendor-upgrade.md`](vendor-upgrade.md) 完成兼容性回归。
+- 构建组交付 source bundle、checksum、I-08 OCI 归档及 build manifest；部署组核对归档，推送到客户 registry 后记录可拉取的 image digest。build manifest 的归档 SHA-256 不等于 registry digest。
+- 首次部署按 [`docs/deployment.md`](deployment.md) 准备 PostgreSQL/Redis、执行 migration、创建 Secret、安装 Helm chart，并用 `--session` smoke 验证 Go → chatrtmgr → Harness Gateway 启动链。实时事件使用 canonical envelope；旧 chatsvc 仅保留在隔离回退和历史读取兼容范围内。Docker/Compose 仅用于本地或单机验证。
+- 失败时保留构建报告、镜像 digest、Helm values（不含密钥）、Pod 状态和脱敏诊断；按故障所属仓库回交权威团队。对外分享日志前人工检查敏感信息。

@@ -1,0 +1,11 @@
+NetworkClaw combined runtime installed.
+
+Check rollout:
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "networkclaw-bundle.fullname" . }}-chatrtmgr
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "networkclaw-bundle.fullname" . }}-lobby
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "networkclaw-bundle.fullname" . }}-web2
+
+Local smoke without an Ingress:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "networkclaw-bundle.fullname" . }}-web2 5174:5174
+  python3 tools/deployment_smoke.py --url http://127.0.0.1:5174

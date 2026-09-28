@@ -34,6 +34,26 @@
 
 旧计划中的单仓库能力仍然必须在其所属仓库保持通过；Integration 任务不会把这些能力复制一份。
 
+## Harness Gateway 目标架构
+
+当前跨仓库目标已经确定为：
+
+```text
+user_id -> 一个 Harness Gateway 进程
+             -> 多个 session_id
+                -> 各自独立的 Hermes session/runtime
+                   -> 各自按 agent_id 选择或重建 Agent
+```
+
+Gateway 将最终替代 chatsvc 承接用户亲和、session/lease 和 Host Protocol 事件；chatrtmgr 仍负责用户级进程亲和、UDS、进程生命周期和故障重启；现有 Harness `HermesHostAdapter`、`_HermesSession` 和 Hermes runtime 继续负责 Agent/turn 执行生命周期。迁移重点是新增 Gateway 外壳和 `agent_id` 配置接线，不是重写 Adapter 或 Hermes Agent loop。详细职责、故障范围和完成度见 [Harness Gateway 亲和与执行边界](../architecture/harness-gateway-affinity.md)。
+
+可执行任务拆分见：
+
+- [Harness Gateway 替代 chatsvc 执行方案](harness-gateway-replacement-plan.md)：先完成 Gateway 直连、兼容传输、组合验收和 chatsvc 移除。
+- [Harness 事件统一设计与执行计划](event-unification-design-and-plan.md)：在 Gateway 替代完成后，单独推进 baseline 36 个事件、Hermes 过程事件扩展和前端过程视图的 canonical envelope、原名透传和下游统一。
+
+该架构正在按独立迁移计划实施：G-01 至 G-08 已完成。G-08 已将默认配置、生产构建入口、Gateway-only bundle、Linux/amd64 OCI 和 Compose 部署 smoke 切换到 Gateway；合法 PID 1 owner guard 已在 Harness 修复并通过定向、组合矩阵和最终 bundle self-test。kind worker 的磁盘不足仍是平台资源恢复后的重验项，不是 Gateway 功能阻塞。baseline 36 个事件、Hermes 过程事件扩展和前端过程视图由独立事件计划承接，下一步先执行 E-00/E-00a。
+
 ## 责任边界
 
 以下按客户团队职责建议主责，实际团队名称可替换，但源码所有权不变：
@@ -53,10 +73,10 @@
 I-01 -> I-02 -> I-03 -> I-04 -> I-05 ──┐
                   I-02 -> I-06 -> I-07 ─┴-> I-08
 I-01 + I-05 + I-06 + I-08 -> I-09
-I-08 + I-09 -> I-10
+I-08 -> I-10（引入新 vendor 版本时还需 I-09）
 ```
 
-依赖关系以各任务的“依赖”字段为准：I-02 完成后，I-03/I-04/I-05 与 I-06/I-07 两条主线可以并行推进；I-08 等 I-05 与 I-07 汇合后启动；I-09 需要已有的组合矩阵、bundle provenance 和 Ubuntu CI；I-10 再消费 I-08/I-09 的验证结果。I-08 必须依赖 I-07，不能只把本地 Mac Docker 结果当成正式目标平台证据。
+依赖关系以各任务的“依赖”字段为准：I-02 完成后，I-03/I-04/I-05 与 I-06/I-07 两条主线可以并行推进；I-08 等 I-05 与 I-07 汇合后启动；I-09 需要已有的组合矩阵、bundle provenance 和 Ubuntu CI；I-10 可基于 I-08 已验证的版本开始首次部署，引入新 vendor 版本时再以 I-09 的兼容性结果为前提。I-08 必须依赖 I-07，不能只把本地 Mac Docker 结果当成正式目标平台证据。
 
 ## 阶段与任务
 
@@ -199,7 +219,7 @@ I-08 + I-09 -> I-10
 
 **状态**：已完成（2026-09-23）。
 
-**完成证据**：`NetworkClaw/tests/integration/harnessinterop/` 新增单 Session vertical flow、同 Session admission/active steer/cancel、request replay/hash conflict 和 takeover/stale control 的真实 Go client ↔ Python Harness 测试；现有 provider interruption、双 Session multiplex、parent/child scope 测试继续纳入。`tools/run-combination-matrix.py` 统一运行跨仓测试、Go SIGKILL/replacement 和 EOF/backpressure 支撑测试、Harness recovery/delegation 测试，生成 `.integration-state/evidence/combination-matrix.json` 与 Markdown 报告。2026-09-23 Mac 实跑矩阵全部通过。报告 reason code 是各测试断言的预期值，脚本验证指定测试执行通过，不自动解析运行时事件；旧 epoch revoke 的 Go 本地 binding 检查属于单元支撑证据，不列为 wire protocol 跨仓场景。固定场景、命令和平台边界见 `docs/evidence/combination-matrix.md`。
+**完成证据**：`NetworkClaw/tests/integration/harnessinterop/` 新增单 Session vertical flow、同 Session admission/active steer/cancel、request replay/hash conflict 和 takeover/stale control 的真实 Go client ↔ Python Harness 测试；现有 provider interruption、双 Session multiplex、parent/child scope 测试继续纳入。`tools/run-combination-matrix.py` 统一运行跨仓测试、Go SIGKILL/replacement 和 EOF/backpressure 支撑测试、Harness recovery/delegation 测试，生成 `.integration-state/evidence/combination-matrix.json` 与 Markdown 报告，并记录 post-matrix cleanup evidence。2026-09-26 Mac 实跑当前矩阵全部通过，cleanup status 为 `clean`。报告 reason code 是各测试断言的预期值，脚本验证指定测试执行通过，不自动解析运行时事件；旧 epoch revoke 的 Go 本地 binding 检查属于单元支撑证据，不列为 wire protocol 跨仓场景。固定场景、命令和平台边界见 `docs/evidence/combination-matrix.md`。
 
 **边界**：EOF/backpressure、unknown side effect 和 exactly-once child release 的直接证据仍来自 Go client/Harness 支撑测试；它们由同一个组合门禁运行并列入报告，但不被描述为单一 Go↔Python 场景。Ubuntu 22.04 full matrix、镜像和 bundle 脱离工作区验收属于 I-07/I-08。
 
@@ -300,7 +320,7 @@ I-08 + I-09 -> I-10
 - integration 提供 `vendor-status`、`vendor-compat-test` 和组合回归入口。
 - 记录上游 ref、patch series、vendor tree hash、协议变化和升级风险。
 - vendor 变更后先验证 Harness 单仓测试，再运行跨仓组合矩阵和 bundle/image provenance 检查；验证失败时报告具体阶段并阻止该变更进入正式交付。
-- 保留上一份已验证的 Harness source lock，便于需要时恢复组合基线；不要求为非生产环境建设独立、复杂的自动回滚机制。
+- 保留上一份已验证的 Harness source lock 供版本对照；I-09 只证明新 vendor 输入是否可交付，不负责部署切换、灰度编排或自动回滚。
 
 **产物**：
 
@@ -319,14 +339,17 @@ I-08 + I-09 -> I-10
 
 **主责**：部署组；构建组提供可验证 image/bundle/manifest 和部署所需配置。
 
+**状态**：已完成（2026-09-24；客户确认本地 kind 可作为 I-10 的部署验收环境）。
+
 **内容**：
 
 - Kubernetes 是客户主要部署环境，优先提供可配置的 Helm chart 和首次安装说明；同时提供 Docker 命令与 Docker Compose，支持本地或单机验证。systemd 不纳入当前任务范围；本地联合调试继续使用 I-03 的工具直接启动服务。
-- 从 I-08 已验证的 OCI image/digest 和 build manifest 部署，不在部署脚本中重拼源码；说明镜像、bundle、三仓 commit/tree hash 之间的对应关系。
-- 验证首次部署路径：最小配置、镜像拉取、必需环境变量/Secret、持久化或外部依赖配置、Kubernetes Service/Ingress（如适用）、readiness/liveness probe 和部署后 smoke test。
+- 使用 I-08 已验证的 OCI artifact 和 build manifest；推送到客户 registry 后记录可拉取的 image digest，说明其与 bundle、三仓 commit/tree hash 的对应关系，不在部署脚本中重拼源码。
+- 验证首次部署路径：最小配置、镜像拉取、必需环境变量/Secret、数据库初始化/迁移和外部依赖连通、持久化配置、Kubernetes Service/Ingress（如适用）、readiness/liveness probe，以及覆盖 Go ↔ Harness 的部署后 smoke test。
 - 提供面向开发与运维的调试信息：查看 Go/Harness 日志、检查 Pod/容器状态与 probe、收集脱敏诊断、定位启动/配置/依赖错误；本地调试入口链接到 `docs/local-development.md`。
-- Kubernetes 原生 rollout 能力作为平台已有能力使用，不额外建设复杂 staged rollout 编排；记录基本版本切换/回退命令即可，非生产阶段不以自动回滚系统为验收重点。
+- Kubernetes 原生发布与切换能力按平台默认方式使用，不额外建设 staged rollout 编排；仅记录如何切换到已验证的 image/digest，非生产阶段不以灰度或自动回滚为验收重点。
 - 客户交接文档说明三仓日常修改归属、联合调试、CI/build manifest、首次部署、常见故障定位和问题收集方式。
+- I-10 的主验收是首次安装成功、服务 ready、端到端 smoke 通过和问题可诊断；版本切换/恢复只保留为简要人工操作说明。
 
 **产物**：
 
@@ -334,9 +357,13 @@ I-08 + I-09 -> I-10
 - `deploy/docker/`、`deploy/compose/`
 - `docs/deployment.md`
 - `docs/customer-handoff.md`
-- 首次部署与调试 runbook，附简要 Kubernetes 版本切换/回退说明。
+- 首次部署与调试 runbook，附已验证 image/digest 的简要人工切换说明。
 
-**验收**：部署人员可仅依据 integration 交付的镜像、manifest、Helm chart 和文档，在客户 Kubernetes 非生产环境完成首次安装并通过 readiness/liveness 与 smoke test；能够查看 Go/Harness 日志、收集脱敏诊断并按 runbook 定位常见启动故障。Docker/Compose 路径可完成本地或单机 smoke。无需自行拼装源码或理解 Harness 内部 Agent loop；不要求构建独立灰度/自动回滚系统。
+**验收**：部署人员可依据 integration 交付的镜像、manifest、Helm chart 和文档，在本地隔离 kind namespace 完成依赖准备、数据库初始化/迁移及首次安装，并通过 readiness/liveness 与 Go ↔ Harness 启动链 smoke test；能够查看 Go/Harness 日志、收集脱敏诊断并按 runbook 定位常见启动故障。Docker/Compose 路径可完成本地或单机 smoke。无需自行拼装源码或理解 Harness 内部 Agent loop；不要求构建独立灰度、自动回滚或 systemd 部署系统。客户 registry 和非生产集群部署按交接文档在客户环境重验，不作为本轮完成门禁。
+
+**完成证据**：`deploy/helm/networkclaw-bundle/`、`deploy/compose/`、`deploy/docker/README.md`、`docs/deployment.md`、`docs/customer-handoff.md`、`tools/deployment_smoke.py`、`tools/collect_k8s_diagnostics.py` 和 `tools/kind-up.py` 已形成首装、手动 kind 验收与排障入口。2026-09-24 使用 I-08 本地 Linux/amd64 combined image 在 Mac Docker Compose 完成 PostgreSQL 迁移（16 张业务表）、所有服务健康检查及登录/创建 Session/manager-service binding/关闭 Session smoke；同一镜像加载到现有 kind 集群的独立 `networkclaw-i10-verify` namespace 后，Helm 安装成功、两个 Pod Ready、迁移与相同 smoke 通过，诊断工具产出仅含状态字段的 `0600` 文件。新增 `make kind-up` 在 `networkclaw-manual` 独立 namespace 启动临时 PostgreSQL/Redis/etcd，先以 kind Job 执行并记录 20 个 migration 文件的 SHA-256，再以 etcd 服务发现安装 **2 个 lobby 和 2 个 chatrtmgr**；两个 manager 分布在两个 kind worker，etcd `/services` 下有两个注册 key，重复执行会跳过内容未变的 migration，手动端口转发后的 healthz/readyz/metrics、Session 创建/绑定/关闭 smoke 通过；`make kind-down` 仅允许删除受保护名单之外的 DNS 合法 namespace。kind provider 配置现可从本地未提交 env 文件读取并经 Secret 注入；模型同步 Job 使前端目录显示 5 个 GPT，旧 Qwen 种子标记为未部署；验证 Secret 配置键非空、模型列表接口返回 5 个已部署 GPT，未执行真实 GPT 对话验收。OCI 归档 SHA-256 与 build manifest 一致，本地 image ID 对应 OCI 配置 blob，镜像标签对应三仓 commit 与 bundle SHA-256。`make test` 通过 53 项；包含部署输入的 customized bundle 已构建并由 verifier 校验，`compose.env.example` 确认在包内。隔离 bundle self-test 最终 `status=passed`、13 个步骤全部成功（含 Harness 测试、Integration 测试、组合矩阵和解包重建），报告在 `.integration-state/evidence/i10-bundle-self-test.json`。测试 namespace 和 Compose 项目及其专用数据库卷已清理；手动验收 namespace 按用户要求保留。
+
+**交付边界**：kind 节点为 arm64、本地镜像用 `image.pullPolicy=Never`；客户 registry digest 核对、私有镜像拉取和客户 Kubernetes 非生产环境的实际首装须在客户环境按同一文档重验，不以本地结果冒充。当前三仓均存在开发期源码树与 `sources.lock.yaml` 不一致，`verify-sources-lock` 非零退出；本轮 bundle 明确标为 customized，不得冒充正式 release provenance。这些是客户正式发布前的后续门禁，不影响用户确认的本地 I-10 范围。
 
 ## 任务优先级
 
@@ -353,10 +380,10 @@ P0 未完成前，不应把旧计划中的“组合发布已完成”作为最�
 
 ```text
 I-01 + I-05 + I-06 + I-08 -> I-09
-I-08 + I-09 -> I-10
+I-08 -> I-10（引入新 vendor 版本时还需 I-09）
 ```
 
-P1 是客户接管后持续开发、升级 Hermes 和生产运维的必需链路。
+P1 是客户接管后持续开发、升级 Hermes 和完成首次部署的交付链路。
 
 ## 统一验收门禁
 
@@ -394,7 +421,7 @@ M1 验证命令：`make bootstrap`、`make test`（包含四个 Draft 2020-12 sc
 
 ## M2 进度记录
 
-M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至 I-09 已完成；下一条交付线是 I-10 首次部署、运行调试和客户交接。
+M2 的目标是让三仓库组合具备可重复的故障验证能力和本地首装验收。I-04 至 I-10 已完成；客户环境部署按 I-10 交接文档重验。
 
 | 任务 | 状态 | 主要产物与验证 | 遗留/依赖 |
 |---|---|---|---|
@@ -404,3 +431,4 @@ M2 的目标是让三仓库组合具备可重复的故障验证能力。I-04 至
 | I-07 | 已完成 | 临时目录解包、独立 venv/锁依赖、doctor、Harness 全量测试、Integration 38 项测试、组合矩阵、原包验证、源码重建和重建包验证全部通过；报告 `.integration-state/evidence/bundle-self-test.json` | 当前证据为 Mac/CPython 3.12；Ubuntu 22.04 wheelhouse、Linux/amd64 镜像和正式 CI 属于 I-08 |
 | I-08 | 已完成 | Ubuntu 22.04 目标门禁通过：bootstrap、offline wheelhouse、Go `-race`、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier、bundle self-test、Linux/amd64 OCI/Docker archive、非 root 入口、三仓/bundle provenance、license 摘要、Syft SBOM；Trivy vulnerabilities/misconfigurations/secrets 均为 0，当前 Go HEAD `govulncheck` 为 0 vulnerabilities | 客户首次启用 workflow 时归档 Ubuntu runner 运行记录；I-09 负责 vendor 升级回归 |
 | I-09 | 已完成 | `vendor-status` 汇总 Hermes/vendor 与三仓身份；`vendor-compat-test` 串联 vendor verifier、Harness 全量测试、组合矩阵和 source-lock gate；release bundle 强制 vendor verifier；升级/不兼容/恢复 fixture 全部有报告 | 客户实际 Hermes 上游版本变化仍需按同一流程执行；I-10 消费已验证 provenance 和镜像 |
+| I-10 | 已完成 | Helm/Compose/Docker 部署输入、首装/排障/交接文档；Mac Compose 与隔离 kind 的迁移、Ready、Session smoke 通过；kind 工具支持 etcd + 2 lobby + 2 chatrtmgr 分布式验收；Integration `make test` 50 项通过；customized bundle 含部署模板并校验通过 | 客户 registry digest/拉取和客户 Kubernetes 首装按交接文档重验；当前 dirty 源码与 source lock 不匹配，非 release 输入 |
