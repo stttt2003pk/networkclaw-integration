@@ -14,7 +14,7 @@
       "vendor_tree_sha256": null
     },
     "harness": {
-      "path": "harness",
+      "path": "networkclaw-harness",
       "commit": null,
       "tree_sha256": "0000000000000000000000000000000000000000000000000000000000000002",
       "dirty": null,

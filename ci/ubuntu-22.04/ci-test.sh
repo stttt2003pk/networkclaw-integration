@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 NETWORKCLAW_PATH="${NETWORKCLAW_PATH:-$ROOT/../NetworkClaw}"
 HARNESS_PATH="${HARNESS_PATH:-$ROOT/../networkclaw-harness}"
+export NETWORKCLAW_PATH HARNESS_PATH
 WHEELHOUSE="${CI_WHEELHOUSE:-$ROOT/.integration-state/ci/wheelhouse}"
 REPORT="${CI_REPORT:-$ROOT/.integration-state/evidence/ubuntu-22.04-ci.json}"
 BUNDLE_OUTPUT="${BUNDLE_OUTPUT:-.integration-state/artifacts/networkclaw-bundle.tar.gz}"
@@ -13,7 +14,7 @@ if [[ "$BUNDLE_OUTPUT" != /* ]]; then
 else
   BUNDLE_PATH="$BUNDLE_OUTPUT"
 fi
-mkdir -p "$(dirname "$REPORT")"
+mkdir -p "$(dirname "$REPORT")" "$ROOT/.integration-state/evidence"
 cd "$ROOT"
 
 run_stage() {
@@ -40,12 +41,16 @@ run_stage sync_harness_wheelhouse env HARNESS_PATH="$HARNESS_PATH" WHEELHOUSE="$
 run_stage go_test_race go -C "$NETWORKCLAW_PATH" test -race ./...
 run_stage source_lock env NETWORKCLAW_PATH="$NETWORKCLAW_PATH" HARNESS_PATH="$HARNESS_PATH" "$ROOT/.venv/bin/python" "$ROOT/tools/verify_sources_lock.py"
 run_stage harness_tests env HARNESS_PATH="$HARNESS_PATH" bash -c 'cd "$HARNESS_PATH" && PYTHONPATH="$HARNESS_PATH/src" ./scripts/run_tests.sh'
+run_stage capability_release_gates env NETWORKCLAW_PATH="$NETWORKCLAW_PATH" HARNESS_PATH="$HARNESS_PATH" make -C "$ROOT" capability-release-vendor-check capability-release-compile capability-release-check capability-release-diff
 run_stage integration_tests make -C "$ROOT" test
+run_stage capability_release_acceptance make -C "$ROOT" capability-release-acceptance
 run_stage combination_matrix env NETWORKCLAW_PATH="$NETWORKCLAW_PATH" HARNESS_PATH="$HARNESS_PATH" make -C "$ROOT" combination-matrix
+run_stage model_snapshot_acceptance make -C "$ROOT" model-snapshot-acceptance
+run_stage session_execution_acceptance make -C "$ROOT" session-execution-acceptance
 if [ "${CI_ALLOW_DIRTY:-0}" = 1 ]; then
-  run_stage bundle make -C "$ROOT" bundle BUNDLE_OUTPUT="$BUNDLE_OUTPUT"
+  run_stage bundle make -C "$ROOT" bundle BUNDLE_OUTPUT="$BUNDLE_OUTPUT" BUNDLE_CAPABILITY_RELEASE=1
 else
-  run_stage bundle make -C "$ROOT" bundle BUNDLE_OUTPUT="$BUNDLE_OUTPUT" BUNDLE_RELEASE=1
+  run_stage bundle make -C "$ROOT" bundle BUNDLE_OUTPUT="$BUNDLE_OUTPUT" BUNDLE_RELEASE=1 BUNDLE_CAPABILITY_RELEASE=1
 fi
 run_stage verify_bundle make -C "$ROOT" verify-bundle BUNDLE_OUTPUT="$BUNDLE_OUTPUT"
 if [ "$CI_OFFLINE" = 1 ]; then

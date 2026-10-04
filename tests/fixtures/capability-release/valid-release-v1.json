@@ -1,0 +1,142 @@
+{
+  "schema_version": "capability-release.v1",
+  "release_id": "cap-fixture-001",
+  "release_hash": "sha256:00237653ec8f7656fb3a675fe7526f6fdf8b2738636a9ba523188e8525e2e612",
+  "sources": {
+    "networkclaw": {
+      "repository": "NetworkClaw",
+      "ref": "main",
+      "commit": null,
+      "tree_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "dirty": false,
+      "diff_hash": null
+    },
+    "harness": {
+      "repository": "networkclaw-harness",
+      "ref": "main",
+      "commit": null,
+      "tree_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "dirty": false,
+      "diff_hash": null
+    },
+    "integration": {
+      "repository": "networkclaw-integration",
+      "ref": "main",
+      "commit": null,
+      "tree_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "dirty": false,
+      "diff_hash": null
+    }
+  },
+  "hermes": {
+    "source_ref": "hermes-fixture-1",
+    "source_repository": "hermes",
+    "vendor_manifest_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "vendor_tree_hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+  },
+  "protocol": {
+    "host_protocol_version": "1.0",
+    "capability_schema_version": "capability.v1"
+  },
+  "target": {
+    "os": "ubuntu",
+    "version": "22.04",
+    "architecture": "amd64",
+    "session_platform": "linux-amd64"
+  },
+  "catalog": {
+    "version": "2026.09.30",
+    "status": "draft",
+    "source": "composite"
+  },
+  "toolsets": [
+    {
+      "name": "workspace",
+      "revision": 1,
+      "version": "1",
+      "member_tool_revisions": [
+        {
+          "name": "read_file",
+          "revision": 1
+        }
+      ],
+      "source": "hermes",
+      "status": "active"
+    }
+  ],
+  "tools": [
+    {
+      "name": "read_file",
+      "revision": 1,
+      "version": "1",
+      "schema_hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "source": "hermes.registry.read_file",
+      "availability": "available",
+      "status": "active"
+    }
+  ],
+  "skills": [
+    {
+      "skill_id": "workspace-guide",
+      "revision": 1,
+      "version": "1.0.0",
+      "content_hash": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "metadata_hash": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "manifest_hash": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+      "source": "vendor/hermes/skills/workspace-guide",
+      "release_ref": "hermes-fixture-1",
+      "release_status": "available",
+      "trust_state": "trusted",
+      "required_toolsets": [
+        {
+          "name": "workspace",
+          "revision": 1
+        }
+      ],
+      "required_tools": [
+        {
+          "name": "read_file",
+          "revision": 1
+        }
+      ],
+      "support_files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "default",
+      "revision": 1,
+      "revision_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "catalog_version": "2026.09.30",
+      "requested_toolsets": [
+        {
+          "name": "workspace",
+          "revision": 1
+        }
+      ],
+      "allowed_tool_revisions": [
+        {
+          "name": "read_file",
+          "revision": 1
+        }
+      ],
+      "denied_tools": [],
+      "skill_revisions": [
+        {
+          "name": "workspace-guide",
+          "revision": 1
+        }
+      ]
+    }
+  ],
+  "migration": {
+    "source": "none",
+    "legacy_inputs": [],
+    "unresolved": []
+  }
+}

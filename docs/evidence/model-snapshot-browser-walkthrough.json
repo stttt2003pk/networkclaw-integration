@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "checks": [
+    "admin_browser_create_update_default_test",
+    "unsaved_draft_preserved_after_default",
+    "browser_selected_model_executes",
+    "same_session_browser_model_switch",
+    "browser_effort_low_high",
+    "provider_route_and_history_assertions",
+    "browser_disable_model"
+  ],
+  "provider_observations": [
+    [
+      {
+        "model": "gpt-browser-fixture",
+        "credential_revision": 1,
+        "reasoning_effort": "",
+        "history_messages": 1
+      },
+      {
+        "model": "gpt-browser-fixture",
+        "credential_revision": 1,
+        "reasoning_effort": "low",
+        "history_messages": 6
+      }
+    ],
+    [
+      {
+        "model": "gpt-fixture-b",
+        "credential_revision": 1,
+        "reasoning_effort": "high",
+        "history_messages": 4
+      },
+      {
+        "model": "gpt-fixture-b",
+        "credential_revision": 1,
+        "reasoning_effort": "high",
+        "history_messages": 8
+      }
+    ]
+  ]
+}

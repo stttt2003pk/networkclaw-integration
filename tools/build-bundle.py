@@ -9,7 +9,6 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
-import re
 import subprocess
 import tarfile
 import sys
@@ -17,24 +16,10 @@ import io
 from typing import Any
 
 from source_tree import SKIP_DIRS, included_files, tree_hash, file_sha256, git_diff_hash
+from artifact_scan import scan_content
+from capability_bundle import validate as validate_capability_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
-SECRET_NAME = re.compile(r"(^|/)(\.env|\.env\.[^/]+)$", re.IGNORECASE)
-SECRET_CONTENT = re.compile(
-    rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[ \t]*\r?\n"
-    rb"(?:[A-Za-z0-9+/=]{40,}\r?\n)+"
-    rb"-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|"
-    rb"(?:api[_-]?key|access[_-]?token|client[_-]?secret)[ \t]*[:=][ \t]*"
-    rb"(?:[\"'][A-Za-z0-9_+/=-]{24,}[\"']|(?=[A-Za-z0-9_+/=-]{24,}(?:[ \t\r\n]|$))"
-    rb"(?=[A-Za-z0-9_+/=-]*[0-9+/=-])[A-Za-z0-9_+/=-]{24,})",
-    re.IGNORECASE,
-)
-ABSOLUTE_HOME = re.compile(rb"/(?:Users|home)/([A-Za-z0-9_][A-Za-z0-9_.-]*)(?=/|[^A-Za-z0-9_.-]|$)")
-HOME_PLACEHOLDERS = {
-    b"user", b"you", b"example", b"test", b"runner", b"developer", b"username", b"yourname",
-    b"alice", b"bob", b"charlie", b"ubuntu", b"root", b"ci", b"demo", b"u", b"x",
-    b"<username>", b"<user>", b"<me>", b"cwd", b"explicit",
-}
 
 
 def sha256(data: bytes) -> str:
@@ -56,7 +41,7 @@ def source_identity(name: str, root: Path, marker: str) -> tuple[dict[str, Any],
             if Path(target).is_absolute() or ".." in PurePosixPath(target).parts:
                 raise ValueError(f"unsafe symlink in source tree: {path.relative_to(root).as_posix()}")
     identity: dict[str, Any] = {
-        "path": name,
+        "path": "networkclaw-harness" if name == "harness" else name,
         "tree_sha256": tree_hash(root, files),
         "commit": None,
         "dirty": None,
@@ -151,18 +136,6 @@ def hermes_metadata(harness_root: Path) -> dict[str, Any]:
     }
 
 
-def scan_content(rel: str, data: bytes, source_root: Path) -> None:
-    if SECRET_NAME.search(rel):
-        raise ValueError(f"secret-like file is not permitted in bundle: {rel}")
-    if data.startswith((b"\x7fELF", b"MZ", b"\xcf\xfa\xed\xfe", b"PK\x03\x04")):
-        return
-    searchable = data.replace(b"\0", b"")
-    if SECRET_CONTENT.search(searchable):
-        raise ValueError(f"possible credential or private key found in bundle file: {rel}")
-    if any(match.group(1).lower() not in HOME_PLACEHOLDERS for match in ABSOLUTE_HOME.finditer(searchable)):
-        raise ValueError(f"local absolute home path found in bundle file: {rel}")
-
-
 def source_date_epoch(roots: dict[str, Path]) -> int:
     override = os.environ.get("SOURCE_DATE_EPOCH")
     if override:
@@ -192,6 +165,48 @@ def file_records(roots: dict[str, Path], file_sets: dict[str, list[Path]]) -> di
     return dict(sorted(records.items()))
 
 
+def capability_release_payload(integration: Path) -> dict[str, bytes]:
+    evidence = integration / ".integration-state/evidence"
+    def generated(name: str, fallback: str) -> Path:
+        path = evidence / name
+        return path if path.is_file() else integration / fallback
+
+    required = {
+        "integration/release/schemas/capability-release-v1.schema.json": integration / "schemas/capability-release-v1.schema.json",
+        "integration/release/manifests/capability-release.v1.json": generated("capability-release-v1.json", "docs/evidence/capability-release-v1.json"),
+        "integration/release/reports/check.json": generated("capability-release-check-v1.json", "docs/evidence/capability-release-check-v1.json"),
+        "integration/release/reports/diff.json": generated("capability-release-diff-v1.json", "docs/evidence/capability-release-diff-v1.json"),
+        "integration/release/provenance/vendor-gate.json": generated("capability-release-vendor-gate.json", "docs/evidence/capability-release-vendor-gate-v1.json"),
+        "integration/release/migration/session-runbook.md": integration / "docs/contracts/capability-session-migration-v1.md",
+        # Keep the established test/evidence paths available inside an isolated
+        # bundle; the stable release/ paths above are the delivery interface.
+        "integration/docs/evidence/capability-discovery-v1.json": generated("capability-discovery-v1.json", "docs/evidence/capability-discovery-v1.json"),
+        "integration/docs/evidence/capability-release-v1.json": generated("capability-release-v1.json", "docs/evidence/capability-release-v1.json"),
+        "integration/docs/evidence/capability-release-check-v1.json": generated("capability-release-check-v1.json", "docs/evidence/capability-release-check-v1.json"),
+        "integration/docs/evidence/capability-release-diff-v1.json": generated("capability-release-diff-v1.json", "docs/evidence/capability-release-diff-v1.json"),
+        "integration/docs/evidence/capability-release-vendor-gate-v1.json": generated("capability-release-vendor-gate.json", "docs/evidence/capability-release-vendor-gate-v1.json"),
+    }
+    missing = [name for name, path in required.items() if not path.is_file()]
+    if missing:
+        raise ValueError("capability release payload is incomplete: " + ", ".join(missing))
+    payload = {name: path.read_bytes() for name, path in required.items()}
+    try:
+        manifest = json.loads(payload["integration/release/manifests/capability-release.v1.json"])
+        check = json.loads(payload["integration/release/reports/check.json"])
+        diff = json.loads(payload["integration/release/reports/diff.json"])
+        migration = json.loads(payload["integration/release/reports/diff.json"]).get("migration")
+    except (json.JSONDecodeError, TypeError, KeyError) as exc:
+        raise ValueError("capability release diff is not valid JSON") from exc
+    if check.get("status") != "passed" or check.get("manifest_hash") not in (None, manifest.get("release_hash")):
+        raise ValueError("capability release check does not match manifest")
+    if diff.get("status") != "passed" or diff.get("candidate", {}).get("release_hash") != manifest.get("release_hash"):
+        raise ValueError("capability release diff does not match manifest")
+    if not isinstance(migration, dict):
+        raise ValueError("capability release diff is missing migration plan")
+    payload["integration/release/migration/plan.json"] = (json.dumps(migration, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
+    return payload
+
+
 def add_bytes(archive: tarfile.TarFile, name: str, data: bytes, epoch: int) -> None:
     info = tarfile.TarInfo(name)
     info.size = len(data)
@@ -202,7 +217,7 @@ def add_bytes(archive: tarfile.TarFile, name: str, data: bytes, epoch: int) -> N
     archive.addfile(info, io.BytesIO(data))
 
 
-def write_archive(output: Path, roots: dict[str, Path], file_sets: dict[str, list[Path]], manifest: dict[str, Any], epoch: int) -> None:
+def write_archive(output: Path, roots: dict[str, Path], file_sets: dict[str, list[Path]], extras: dict[str, bytes], manifest: dict[str, Any], epoch: int) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     temp = output.with_name(output.name + ".tmp")
     try:
@@ -230,6 +245,8 @@ def write_archive(output: Path, roots: dict[str, Path], file_sets: dict[str, lis
                                 info.mode = 0o755 if os.access(path, os.X_OK) else 0o644
                                 with path.open("rb") as stream:
                                     archive.addfile(info, stream)
+                    for relative, data in sorted(extras.items()):
+                        add_bytes(archive, "networkclaw-bundle/" + relative, data, epoch)
                     add_bytes(archive, "networkclaw-bundle/manifest/bundle-manifest.json",
                               (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode(), epoch)
         os.replace(temp, output)
@@ -261,6 +278,7 @@ def main() -> int:
     parser.add_argument("--target-version", default="22.04")
     parser.add_argument("--target-architecture", default="amd64")
     parser.add_argument("--release", action="store_true", help="require clean sources matching sources.lock.yaml")
+    parser.add_argument("--capability-release", action="store_true", help="embed audited capability release evidence")
     parser.add_argument("--signing-key", type=Path, help="optional PEM private key for detached OpenSSL signature")
     args = parser.parse_args()
     output = args.output if args.output.is_absolute() else ROOT / args.output
@@ -293,6 +311,10 @@ def main() -> int:
         customized = not args.release
         epoch = source_date_epoch(roots)
         records = file_records(roots, file_sets)
+        extras = capability_release_payload(roots["integration"]) if args.capability_release else {}
+        for relative, data in extras.items():
+            scan_content(relative, data, roots["integration"])
+            records[relative] = sha256(data)
         manifest = {
             "schema_version": 1,
             "bundle_version": args.bundle_version,
@@ -304,9 +326,14 @@ def main() -> int:
             "target": {"os": args.target_os, "version": args.target_version, "architecture": args.target_architecture},
             "artifacts": {"files": records},
         }
+        if extras:
+            manifest["capability_release"] = validate_capability_bundle(
+                {key: value for key, value in extras.items() if key.startswith("integration/release/")}, manifest, (roots["integration"] / "schemas/capability-release-v1.schema.json").read_bytes(),
+                (roots["networkclaw"] / "api/lobby/v1/capability-release-v1.schema.json").read_bytes(),
+            )
         manifest_bytes = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
         scan_content("manifest/bundle-manifest.json", manifest_bytes, roots["integration"])
-        write_archive(output, roots, file_sets, manifest, epoch)
+        write_archive(output, roots, file_sets, extras, manifest, epoch)
         archive_hash = file_sha256(output)
         checksum = output.with_suffix(output.suffix + ".sha256")
         checksum.write_text(f"{archive_hash}  {output.name}\n", encoding="ascii")

@@ -1,0 +1,327 @@
+{
+  "checks": [
+    "legacy-write-rejected",
+    "legacy-session-preserved",
+    "candidate-pool-not-authorized",
+    "stale-create-rejected",
+    "failed-publish-preserved-current",
+    "publish-rollback-kept-old-hashes",
+    "real-harness-resume",
+    "real-harness-changed-snapshot-rejected",
+    "real-harness-three-turns",
+    "migration-command-readonly",
+    "migration-up-down",
+    "expired-skill-rejected",
+    "denied-dependency-rejected",
+    "retired-fork-preserved",
+    "tampered-grant-rejected",
+    "publication-lock-contention-rejected"
+  ],
+  "read_only_migration_report": {
+    "active_sessions": [
+      {
+        "status": "running",
+        "session_id_hash": "sha256:01780a188ae9f17d428d1ea30754dcce43afbdb771b5031bd83bdb947c51eeab",
+        "agent_snapshot_hash": "sha256:4e6f761dcd7205a2a02701bfe6e5aa35fa916ccbf2496a8a7b7d7b27fc827661",
+        "skill_snapshot_hash": "sha256:4d41f4a2157d91a39c0800febd0e0faa47058d3c6001d76d6a821bb066d24066",
+        "capability_snapshot_hash": "sha256:55bbbe9f4453e25d15837cc727544be5d80b0fee5fe3392b05d27ccd155f609f"
+      },
+      {
+        "status": "running",
+        "session_id_hash": "sha256:dbe9eba9da87f9a73f1db5a2a6d9a99b9005597d2079560c9faca1ae21dddc07",
+        "agent_snapshot_hash": "sha256:233a6fb35bb3ebf1860b590769305f9b09f96548383e2580b0b353b94a9a1f54",
+        "skill_snapshot_hash": "sha256:25226ce7aef0120a98713c22a6713935b60b01d43050e6eba6ab5370c4998899",
+        "capability_snapshot_hash": "sha256:947e368a661afcf43e14f1b9475460d9827c936cbf9ed8e34c8212b2b37beb5e"
+      },
+      {
+        "status": "running",
+        "session_id_hash": "sha256:257fa1568ce69b74b1d70d71893c2edf77e01b1f4d1000242cb62e56be476a70",
+        "agent_snapshot_hash": "sha256:4a62ca3d4eadc0e5d8b18dfc9d4a82669ea4ed56d58768a7184c34a66cf40571",
+        "skill_snapshot_hash": "sha256:20acb0554cd8611f2eebf97905f2c23f79425120e566ab4f35ca888cf2aea38f",
+        "capability_snapshot_hash": "sha256:e49e39577680b2500109ba5d58ac598473c2d6c2d39bfcaf6ac07b3bc7dc710c"
+      },
+      {
+        "status": "running",
+        "session_id_hash": "sha256:06a68b34939b870f2ac318f41e0ccba1af879ffd080ffcd98367125b230b6739",
+        "agent_snapshot_hash": null,
+        "skill_snapshot_hash": null,
+        "capability_snapshot_hash": null
+      },
+      {
+        "status": "running",
+        "session_id_hash": "sha256:ad50a83fad003d2e5e565eafa05b802d71feb89852709e4f7255b58b44175c1f",
+        "agent_snapshot_hash": "sha256:759b9f8f94947906c2cd98d6299edf4126e0454cf29b8a682130c1581282d9a0",
+        "skill_snapshot_hash": "sha256:68360ceafe156ceeeec51b94bfe86187cd48af71ffe080311b8e1ec5ad25bb61",
+        "capability_snapshot_hash": "sha256:ed4dbde8bc137df1210aa70a9351e43edb63ea9fd3b306b5bd22b5a51401825e"
+      }
+    ],
+    "candidate_mappings": [
+      {
+        "kind": "tool",
+        "legacy_agent": "r09-legacy",
+        "name": "read_file",
+        "revision": 1
+      },
+      {
+        "kind": "skill",
+        "legacy_agent": "r09-legacy",
+        "name": "workspace-inspection",
+        "revision": 1
+      },
+      {
+        "kind": "agent",
+        "legacy_agent": "r09-legacy",
+        "name": "r09-profile",
+        "revision": 1
+      }
+    ],
+    "candidate_release_hash": "sha256:6c518f01258316d053531e1b48393d7ebb17e93b1f62f1e2e9558971b0d2a69c",
+    "candidate_release_id": "cap-r09-first",
+    "legacy_agents": [
+      {
+        "id": "r09-legacy",
+        "name": "r09-profile",
+        "enabled": true,
+        "tools_json": [
+          "read_file",
+          "missing-tool"
+        ],
+        "skills_json": [
+          "workspace-inspection"
+        ]
+      },
+      {
+        "id": "seed-agent-default",
+        "name": "default",
+        "enabled": true,
+        "tools_json": [
+          "networkclaw_workspace_read",
+          "todo_list",
+          "delegate_task",
+          "clarify"
+        ],
+        "skills_json": []
+      },
+      {
+        "id": "seed-agent-readonly",
+        "name": "read-only",
+        "enabled": true,
+        "tools_json": [
+          "networkclaw_workspace_read"
+        ],
+        "skills_json": []
+      }
+    ],
+    "legacy_write_protected": true,
+    "phase": "M0",
+    "profiles": [
+      {
+        "id": "r09-profile",
+        "name": "ops",
+        "enabled": true,
+        "revisions": [
+          {
+            "status": "published",
+            "revision": 1,
+            "revision_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "catalog_version": "r09-first"
+          },
+          {
+            "status": "retired",
+            "revision": 2,
+            "revision_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "catalog_version": "r09-second"
+          },
+          {
+            "status": "draft",
+            "revision": 3,
+            "revision_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "catalog_version": "r09-third"
+          }
+        ]
+      }
+    ],
+    "published_release": {
+      "release_id": "cap-r09-first",
+      "release_hash": "sha256:6c518f01258316d053531e1b48393d7ebb17e93b1f62f1e2e9558971b0d2a69c",
+      "catalog_version": "r09-first"
+    },
+    "read_only": true,
+    "ready_for_review": false,
+    "schema_version": "capability-migration.v1",
+    "unresolved": [
+      {
+        "kind": "tool",
+        "legacy_agent": "r09-legacy",
+        "name": "missing-tool",
+        "reason": "unknown"
+      },
+      {
+        "kind": "tool",
+        "legacy_agent": "seed-agent-default",
+        "name": "clarify",
+        "reason": "unknown"
+      },
+      {
+        "kind": "tool",
+        "legacy_agent": "seed-agent-default",
+        "name": "delegate_task",
+        "reason": "unknown"
+      },
+      {
+        "kind": "tool",
+        "legacy_agent": "seed-agent-default",
+        "name": "networkclaw_workspace_read",
+        "reason": "unknown"
+      },
+      {
+        "kind": "tool",
+        "legacy_agent": "seed-agent-default",
+        "name": "todo_list",
+        "reason": "unknown"
+      },
+      {
+        "kind": "agent",
+        "legacy_agent": "seed-agent-default",
+        "name": "default",
+        "reason": "unknown"
+      },
+      {
+        "kind": "tool",
+        "legacy_agent": "seed-agent-readonly",
+        "name": "networkclaw_workspace_read",
+        "reason": "unknown"
+      },
+      {
+        "kind": "agent",
+        "legacy_agent": "seed-agent-readonly",
+        "name": "read-only",
+        "reason": "unknown"
+      }
+    ]
+  },
+  "rollback_receipt": {
+    "schema_version": "capability-release-admin.v1",
+    "operation": "rollback",
+    "release_id": "cap-r09-first",
+    "manifest_hash": "sha256:6c518f01258316d053531e1b48393d7ebb17e93b1f62f1e2e9558971b0d2a69c",
+    "catalog_version": "r09-first",
+    "release_status": "published",
+    "result": "rolled_back",
+    "reason_code": null,
+    "idempotent": false,
+    "previous_published_hash": "sha256:786b1eb0eb6fb90092d53ae3f3826e3b9dcdd629925f7ca3bc0f150fa78197d8",
+    "audit": {
+      "operator": "r09-admin",
+      "job_id": "r09-fixture",
+      "source_tree_hashes": {
+        "harness": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "integration": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "networkclaw": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    }
+  },
+  "schema_version": "capability-session-migration-evidence.v1",
+  "snapshots": [
+    {
+      "session_id": "r09-before",
+      "profile_id": "r09-profile",
+      "agent_revision": 1,
+      "agent_revision_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "snapshot_hash": "sha256:233a6fb35bb3ebf1860b590769305f9b09f96548383e2580b0b353b94a9a1f54",
+      "projection": {
+        "profile_id": "r09-profile",
+        "agent_revision": 1,
+        "agent_revision_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "catalog_version": "r09-first",
+        "system_prompt": "",
+        "requested_toolsets": [
+          "coding"
+        ],
+        "allowed_tools": [
+          "read_file"
+        ],
+        "denied_tools": null,
+        "permission_mode": "allowlist",
+        "turn_budget": {},
+        "delegation_policy": {},
+        "skills": [
+          {
+            "skill_id": "workspace-inspection",
+            "skill_version": "1.0.0",
+            "mode": "auto_load",
+            "config": {},
+            "position": 0
+          }
+        ]
+      }
+    },
+    {
+      "session_id": "r09-after",
+      "profile_id": "r09-profile",
+      "agent_revision": 2,
+      "agent_revision_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "snapshot_hash": "sha256:4e6f761dcd7205a2a02701bfe6e5aa35fa916ccbf2496a8a7b7d7b27fc827661",
+      "projection": {
+        "profile_id": "r09-profile",
+        "agent_revision": 2,
+        "agent_revision_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "catalog_version": "r09-second",
+        "system_prompt": "",
+        "requested_toolsets": [
+          "coding"
+        ],
+        "allowed_tools": [
+          "search_files"
+        ],
+        "denied_tools": null,
+        "permission_mode": "allowlist",
+        "turn_budget": {},
+        "delegation_policy": {},
+        "skills": [
+          {
+            "skill_id": "workspace-inspection",
+            "skill_version": "1.0.0",
+            "mode": "auto_load",
+            "config": {},
+            "position": 0
+          }
+        ]
+      }
+    },
+    {
+      "session_id": "r09-restored",
+      "profile_id": "r09-profile",
+      "agent_revision": 1,
+      "agent_revision_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "snapshot_hash": "sha256:759b9f8f94947906c2cd98d6299edf4126e0454cf29b8a682130c1581282d9a0",
+      "projection": {
+        "profile_id": "r09-profile",
+        "agent_revision": 1,
+        "agent_revision_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "catalog_version": "r09-first",
+        "system_prompt": "",
+        "requested_toolsets": [
+          "coding"
+        ],
+        "allowed_tools": [
+          "read_file"
+        ],
+        "denied_tools": null,
+        "permission_mode": "allowlist",
+        "turn_budget": {},
+        "delegation_policy": {},
+        "skills": [
+          {
+            "skill_id": "workspace-inspection",
+            "skill_version": "1.0.0",
+            "mode": "auto_load",
+            "config": {},
+            "position": 0
+          }
+        ]
+      }
+    }
+  ],
+  "status": "passed"
+}

@@ -432,3 +432,14 @@ M2 的目标是让三仓库组合具备可重复的故障验证能力和本地�
 | I-08 | 已完成 | Ubuntu 22.04 目标门禁通过：bootstrap、offline wheelhouse、Go `-race`、Harness 240 项、Integration 38 项、组合矩阵、bundle verifier、bundle self-test、Linux/amd64 OCI/Docker archive、非 root 入口、三仓/bundle provenance、license 摘要、Syft SBOM；Trivy vulnerabilities/misconfigurations/secrets 均为 0，当前 Go HEAD `govulncheck` 为 0 vulnerabilities | 客户首次启用 workflow 时归档 Ubuntu runner 运行记录；I-09 负责 vendor 升级回归 |
 | I-09 | 已完成 | `vendor-status` 汇总 Hermes/vendor 与三仓身份；`vendor-compat-test` 串联 vendor verifier、Harness 全量测试、组合矩阵和 source-lock gate；release bundle 强制 vendor verifier；升级/不兼容/恢复 fixture 全部有报告 | 客户实际 Hermes 上游版本变化仍需按同一流程执行；I-10 消费已验证 provenance 和镜像 |
 | I-10 | 已完成 | Helm/Compose/Docker 部署输入、首装/排障/交接文档；Mac Compose 与隔离 kind 的迁移、Ready、Session smoke 通过；kind 工具支持 etcd + 2 lobby + 2 chatrtmgr 分布式验收；Integration `make test` 50 项通过；customized bundle 含部署模板并校验通过 | 客户 registry digest/拉取和客户 Kubernetes 首装按交接文档重验；当前 dirty 源码与 source lock 不匹配，非 release 输入 |
+
+## 模型 Snapshot 增量（2026-10-03）
+
+实现与本地验收已完成，发布门禁仍开放；不改变上文历史 I-01 至 I-10 计数。契约见 [model-config-snapshot-v1](../contracts/model-config-snapshot-v1.md)，证据见 [本地验收记录](../evidence/model-snapshot-acceptance.md)。
+
+- NetworkClaw：migration 030、模型/连接管理和版本、私有 Snapshot、模型选择与最低版本传递、30 秒 broker、不可变 run pin/process fencing、管理员与主页面 UI 已实现。
+- Harness：显式执行配置、身份变化重建 Agent、保持 Session/历史/权限、逐 turn 参数恢复；全量 304 项通过。
+- Integration：部署 Secret/URL 接线、双 Lobby/双 manager/provider stub 矩阵与真实 GPT，27 项通过；最新 `make test` 129 项通过；开发 bundle 已构建和校验。
+- 无逐 turn Lobby claim 请求。新鲜缓存可处理已授权请求；process/socket 丢失返回 pin lost，禁止用最新配置自动重执行旧 run。
+- 真实浏览器 walkthrough 与 amd64 镜像构建已通过；遗留：共享双节点发现、Ubuntu 22.04 部署、完整解包 self-test（本次 Linux wheelhouse 不含 Mac 所需的兼容 wheel）。现有 Go 全树两个 catalog 测试因 migration 029 失败，不能报告全树通过或正式可发布。
+- 下一交接：按现有入口补以上门禁；模型回滚仍推进 revision。三个仓库的其他未提交工作保留，无 Git 提交。

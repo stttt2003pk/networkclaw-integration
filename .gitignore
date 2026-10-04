@@ -4,6 +4,7 @@ workspace.local.yaml
 __pycache__/
 *.egg-info/
 .cache/
+.codebase-memory/
 dist/
 build/
 artifacts/

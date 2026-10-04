@@ -12,7 +12,8 @@ import time
 from typing import Any
 
 
-_ALLOWED_FIELDS = frozenset({"chunk_count", "delay_ms", "mode", "model", "status", "stream"})
+_ALLOWED_FIELDS = frozenset({"chunk_count", "delay_ms", "mode", "model", "status", "stream",
+                             "credential_revision", "reasoning_effort", "max_output_tokens", "history_messages", "api_mode", "tool_names", "skill_verified", "skill_content_hash", "skill_version", "workspace_read_verified"})
 _REASON_CODE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 _MAX_LEDGER_BYTES = 4 * 1024 * 1024
 _MAX_MEMORY_EVENTS = 2048

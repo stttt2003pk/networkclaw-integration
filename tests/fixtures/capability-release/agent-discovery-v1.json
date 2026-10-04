@@ -1,0 +1,28 @@
+{
+  "schema_version": "networkclaw.agent-revision-export.v1",
+  "profiles": [
+    {
+      "profile_id": "profile-ops",
+      "name": "ops",
+      "display_name": "Operations",
+      "enabled": true,
+      "revisions": [
+        {
+          "revision": 1,
+          "revision_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "status": "draft",
+          "catalog_version": "hermes-tool-inventory-v1",
+          "requested_toolsets": ["coding"],
+          "tools": [
+            {"tool_name": "read_file", "tool_revision": 1, "decision": "allowed"},
+            {"tool_name": "search_files", "tool_revision": 1, "decision": "allowed"},
+            {"tool_name": "terminal", "tool_revision": 1, "decision": "denied"}
+          ],
+          "skills": [
+            {"skill_id": "workspace-inspection", "skill_version": "1.0.0", "mode": "auto_load", "position": 0}
+          ]
+        }
+      ]
+    }
+  ]
+}

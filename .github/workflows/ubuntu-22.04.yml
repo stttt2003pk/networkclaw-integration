@@ -12,6 +12,18 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-22.04
+    services:
+      capability-postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: capability_test
+          POSTGRES_PASSWORD: capability_test
+          POSTGRES_DB: capability_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U capability_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -38,6 +50,8 @@ jobs:
           cache: npm
           cache-dependency-path: NetworkClaw/web2/package-lock.json
       - uses: docker/setup-buildx-action@v3
+      - name: Install distributed acceptance fixtures
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client redis-server
       - name: Prepare Linux amd64 offline wheelhouse
         env:
           WHEELHOUSE: ${{ github.workspace }}/.integration-state/ci/wheelhouse
@@ -61,6 +75,9 @@ jobs:
           CI_WHEELHOUSE: ${{ github.workspace }}/.integration-state/ci/wheelhouse
           CI_OFFLINE: '1'
           CI_REQUIRE_CLEAN: '1'
+          CAPABILITY_MIGRATION_TEST_DSN: postgres://capability_test:capability_test@127.0.0.1:5432/capability_test?sslmode=disable
+          PGUSER: capability_test
+          PGPASSWORD: capability_test
         run: ./ci/ubuntu-22.04/ci-test.sh
       - name: Go vulnerability scan
         run: |
@@ -104,8 +121,11 @@ jobs:
             .integration-state/evidence/image-license-summary.json
             .integration-state/evidence/govulncheck.txt
             .integration-state/evidence/bundle-self-test.json
+            .integration-state/evidence/capability-*.json
             .integration-state/evidence/combination-matrix.json
             .integration-state/evidence/combination-matrix.md
+            .integration-state/evidence/model-snapshot-acceptance*.json
+            .integration-state/evidence/model-snapshot-acceptance*.log
             .integration-state/artifacts/networkclaw-bundle.tar.gz
             .integration-state/artifacts/networkclaw-bundle.tar.gz.sha256
             .integration-state/artifacts/ubuntu-22.04-linux-amd64/*.oci.tar

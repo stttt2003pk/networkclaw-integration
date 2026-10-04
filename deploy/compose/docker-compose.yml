@@ -49,8 +49,6 @@ services:
       PGUSER: ${POSTGRES_USER:-ongrid}
       PGDATABASE: ${POSTGRES_DB:-ongrid}
       PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
-      OPENAI_MODEL: ${OPENAI_MODEL:-}
-      OPENAI_MODELS: ${OPENAI_MODELS:-}
     volumes:
       - ${NETWORKCLAW_MIGRATIONS_DIR:-../../../networkclaw/internal/lobby/database/migrations}:/migrations:ro
     entrypoint:
@@ -74,21 +72,6 @@ services:
           psql -X -v ON_ERROR_STOP=1 -1 -f "$$migration"
           psql -X -v ON_ERROR_STOP=1 -c "INSERT INTO networkclaw_compose_migrations (filename, sha256) VALUES ('$$name', '$$digest')"
         done
-        models="$${OPENAI_MODELS:-$$OPENAI_MODEL}"
-        if [ -n "$$models" ]; then
-          configured=""
-          old_ifs="$$IFS"; IFS=,
-          for model in $$models; do
-            model="$$(printf '%s' "$$model" | tr -d '[:space:]')"
-            case "$$model" in *[!A-Za-z0-9._:-]*|'') echo "invalid OPENAI model" >&2; exit 1;; esac
-            psql -X -v ON_ERROR_STOP=1 -c \
-              "INSERT INTO catalog_models (id, provider, model_id, base_url, display_name, enabled, deployed) VALUES ('seed-openai-$$model', 'openai', '$$model', '', '$$model', true, true) ON CONFLICT (provider, model_id) DO NOTHING"
-            configured="$${configured:+$$configured,}'$$model'"
-          done
-          IFS="$$old_ifs"
-          psql -X -v ON_ERROR_STOP=1 -c \
-            "UPDATE catalog_models SET deployed = false WHERE id LIKE 'seed-openai-%' AND model_id NOT IN ($$configured)"
-        fi
 
   chatrtmgr:
     image: ${NETWORKCLAW_IMAGE:-networkclaw:ci-linux-amd64}
@@ -114,12 +97,11 @@ services:
       NETWORKCLAW_GATEWAY_SOCKET_DIR: /tmp/ongrid/sockets
       NETWORKCLAW_HARNESS_FRAME_LOG: /tmp/ongrid/harness-frames.jsonl
       ONGRID_HARNESS_WORKSPACE_ROOT: /tmp/ongrid/harness
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-}
-      OPENAI_MODELS: ${OPENAI_MODELS:-}
-      NETWORKCLAW_HARNESS_ALLOWED_MODELS: ${NETWORKCLAW_HARNESS_ALLOWED_MODELS:-}
+      CHATRTMGR_LOBBY_URL: https://lobby:8443
+      CHATRTMGR_MODEL_CONFIG_TOKEN_FILE: /run/secrets/model-token
+      CHATRTMGR_MODEL_CONFIG_CA_FILE: /run/secrets/model-ca
       NETWORKCLAW_HARNESS_ALLOWED_EGRESS_HOSTS: ${NETWORKCLAW_HARNESS_ALLOWED_EGRESS_HOSTS:-}
+    secrets: [model-token, model-ca]
     ports:
       - "${CHATRTMGR_GRPC_PORT:-50052}:50052"
       - "${CHATRTMGR_METRICS_PORT:-9101}:9101"
@@ -147,6 +129,10 @@ services:
       DEV_ENV: dev
       ONGRID_HTTP_ADDR: :8080
       ONGRID_METRICS_ADDR: :9100
+      LOBBY_MODEL_CONFIG_TOKEN_FILE: /run/secrets/model-token
+      ONGRID_MODEL_CONFIG_TLS_ADDR: :8443
+      ONGRID_MODEL_CONFIG_CERT_FILE: /run/secrets/model-cert
+      ONGRID_MODEL_CONFIG_KEY_FILE: /run/secrets/model-key
       ONGRID_DB_HOST: postgres
       ONGRID_DB_PORT: 5432
       ONGRID_DB_USER: ${POSTGRES_USER:-ongrid}
@@ -167,6 +153,7 @@ services:
       ONGRID_SEED_ADMIN_PASSWORD: ${ONGRID_SEED_ADMIN_PASSWORD:-}
       ONGRID_LOG_LEVEL: ${ONGRID_LOG_LEVEL:-info}
       ONGRID_LOG_FORMAT: json
+    secrets: [model-token, model-cert, model-key]
     ports:
       - "${LOBBY_HTTP_PORT:-8080}:8080"
       - "${LOBBY_METRICS_PORT:-9100}:9100"
@@ -195,3 +182,14 @@ services:
 
 volumes:
   postgres-data:
+
+# Provision outside the image; compose.py creates protected local development files.
+secrets:
+  model-token:
+    file: ${NETWORKCLAW_MODEL_SECRET_DIR:-../../.integration-state/model-secrets}/token
+  model-ca:
+    file: ${NETWORKCLAW_MODEL_SECRET_DIR:-../../.integration-state/model-secrets}/ca.pem
+  model-cert:
+    file: ${NETWORKCLAW_MODEL_SECRET_DIR:-../../.integration-state/model-secrets}/cert.pem
+  model-key:
+    file: ${NETWORKCLAW_MODEL_SECRET_DIR:-../../.integration-state/model-secrets}/key.pem

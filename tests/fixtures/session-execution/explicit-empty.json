@@ -1,0 +1,33 @@
+{
+  "contract_version": "session-execution.v1",
+  "session_id": "session-parent",
+  "release": {
+    "release_id": "fixture-release",
+    "release_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "catalog_version": "fixture-v1"
+  },
+  "policy": {
+    "system_prompt": "你是可靠的会话助手。",
+    "permission_mode": "read_only",
+    "turn_budget": {
+      "max_steps": 8,
+      "max_retries": 2,
+      "max_actions": 16,
+      "timeout_seconds": 60
+    },
+    "delegation_policy": {
+      "enabled": false,
+      "max_depth": 0,
+      "max_concurrent_children": 0,
+      "child_budget": {
+        "max_iterations": 4,
+        "timeout_seconds": 30,
+        "max_output_bytes": 4096
+      }
+    }
+  },
+  "requested_toolsets": [],
+  "tools": [],
+  "skills": [],
+  "snapshot_hash": "sha256:ab38761d485e4f5e7aa78efcec6c02d155d32bc486da4e80400e3ec6d5c4bc11"
+}

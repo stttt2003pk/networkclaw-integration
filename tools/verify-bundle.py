@@ -12,6 +12,9 @@ import subprocess
 import sys
 import tarfile
 
+from artifact_scan import scan_content
+from capability_bundle import PREFIX, validate as validate_capability_bundle
+
 ROOT = Path(__file__).resolve().parents[1]
 SECRET_NAME = re.compile(r"(^|/)\.env(?:\.[^/]+)?$", re.IGNORECASE)
 SECRET_CONTENT = re.compile(
@@ -134,6 +137,11 @@ def verify(archive_path: Path, public_key: Path | None) -> dict[str, object]:
             )
             raise ValueError(f"bundle manifest does not match schema: {detail}")
 
+        for source, marker in (("networkclaw", "go.mod"), ("harness", "pyproject.toml"), ("integration", "pyproject.toml")):
+            relative = manifest["sources"][source]["path"]
+            if Path(relative).is_absolute() or ".." in Path(relative).parts or f"networkclaw-bundle/{relative}/{marker}" not in by_name:
+                raise ValueError(f"bundle source path does not locate {source}/{marker}")
+
         expected: dict[str, str] = manifest["artifacts"]["files"]
         actual_names = {
             name.removeprefix("networkclaw-bundle/")
@@ -157,15 +165,20 @@ def verify(archive_path: Path, public_key: Path | None) -> dict[str, object]:
                 data = stream.read()
             if sha256(data) != expected_hash:
                 raise ValueError(f"payload checksum mismatch: {member_name}")
-            if SECRET_NAME.search(name):
-                raise ValueError(f"secret-like file is present in bundle: {member_name}")
-            searchable = data.replace(b"\0", b"")
-            if SECRET_CONTENT.search(searchable):
-                raise ValueError(f"possible credential or private key found in bundle file: {member_name}")
-            if any(
-                match.group(1).lower() not in HOME_PLACEHOLDERS for match in ABSOLUTE_HOME.finditer(searchable)
-            ):
-                raise ValueError(f"local absolute home path found in bundle file: {member_name}")
+            scan_content(member_name, data, Path("."))
+
+        if "capability_release" in manifest:
+            def read_payload(relative: str) -> bytes:
+                stream = tar.extractfile("networkclaw-bundle/" + relative)
+                if stream is None:
+                    raise ValueError("capability_payload_incomplete")
+                return stream.read()
+            payload = {name: read_payload(name) for name in expected if name.startswith(PREFIX)}
+            identity = validate_capability_bundle(payload, manifest,
+                read_payload("integration/schemas/capability-release-v1.schema.json"),
+                read_payload("networkclaw/api/lobby/v1/capability-release-v1.schema.json"))
+            if identity != manifest["capability_release"]:
+                raise ValueError("capability_bundle_identity_drift")
 
     return {
         "archive": str(archive_path),

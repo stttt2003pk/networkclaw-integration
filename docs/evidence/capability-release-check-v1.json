@@ -1,0 +1,14 @@
+{
+  "checks": {
+    "agent_references": true,
+    "release_hash": true,
+    "skill_dependencies": true,
+    "toolset_membership": true,
+    "vendor_gate": true
+  },
+  "errors": [],
+  "manifest_hash": "sha256:691dbf676929453e751e2e747baf99d440ae3e62fd1a43df65b76b68869f3157",
+  "reason_code": null,
+  "schema_version": "capability-release-check.v1",
+  "status": "passed"
+}

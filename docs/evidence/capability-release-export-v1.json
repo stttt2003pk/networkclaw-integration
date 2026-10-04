@@ -1,0 +1,58 @@
+{
+  "schema_version": "capability-release-export-acceptance.v1",
+  "task": "R-06",
+  "date": "2026-09-30",
+  "status": "passed",
+  "artifact": ".integration-state/artifacts/r06-release-final",
+  "release_id": "cap-local",
+  "release_state": "draft",
+  "manifest_hash": "sha256:a491356bb7916bab45ccdb41b9695eebfdfb6b71b6a869ac08186829cea4bb2a",
+  "checksum_hash": "sha256:40efc66d5891fe3ead5575e4266d50e86251bc5efc09f7b070cb3d373b7ba8bf",
+  "payload_file_count": 14,
+  "total_file_count": 15,
+  "audit_identity": {
+    "operator": "local",
+    "job_id": "r06-acceptance"
+  },
+  "acceptance": {
+    "make_export": "passed",
+    "make_verify_export": "passed",
+    "relocated_standalone_verifier": "passed",
+    "verifier_from_other_cwd_without_pythonpath": "passed",
+    "relocation_preserves_hashes": true,
+    "same_inputs_export_all_files_identical": true,
+    "verifier_creates_no_bytecode_cache": true,
+    "temporary_directories_cleaned": true,
+    "source_lock_freezes_manifest_identity": true
+  },
+  "regression": {
+    "command": "make test",
+    "status": "passed",
+    "python_tests": 102,
+    "export_test_methods": 6,
+    "go_race_command": "go test -race ./tools/web2-server",
+    "go_race_status": "passed",
+    "contracts_command": "make validate-contracts",
+    "contracts_status": "passed",
+    "harness_vendor_command": "python scripts/verify-hermes-vendor.py",
+    "harness_vendor_status": "passed",
+    "harness_vendor_verified_files": 1104
+  },
+  "baseline": {
+    "path": "tests/fixtures/capability-release/valid-release-v1.json",
+    "kind": "test_fixture",
+    "production_published_release": false
+  },
+  "repository_scope": {
+    "integration": "implementation_and_documentation",
+    "harness": "verification_only_existing_changes_preserved",
+    "networkclaw": "no_new_changes_existing_changes_preserved"
+  },
+  "limitations": [
+    "Standalone verification requires Python 3.12 and jsonschema.",
+    "Checksums establish integrity and associations, not publisher authenticity.",
+    "This draft artifact does not import or publish a production release.",
+    "All three source identities record dirty working trees."
+  ],
+  "next_task": "R-07"
+}

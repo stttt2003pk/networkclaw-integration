@@ -153,55 +153,26 @@ spec:
               value: {{ printf "http://%s-lobby:%d" (include "networkclaw-bundle.fullname" .) (.Values.service.lobby.httpPort | int) | quote }}
             - name: ONGRID_OTEL_ENDPOINT
               value: ""
-            {{- if .Values.provider.baseUrl }}
-            - name: OPENAI_BASE_URL
-              value: {{ .Values.provider.baseUrl | quote }}
-            {{- else if $secret }}
-            - name: OPENAI_BASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secret }}
-                  key: OPENAI_BASE_URL
-                  optional: true
-            {{- end }}
-            {{- if $secret }}
-            - name: OPENAI_MODEL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secret }}
-                  key: OPENAI_MODEL
-                  optional: true
-            - name: OPENAI_MODELS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secret }}
-                  key: OPENAI_MODELS
-                  optional: true
-            - name: NETWORKCLAW_HARNESS_ALLOWED_MODELS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secret }}
-                  key: NETWORKCLAW_HARNESS_ALLOWED_MODELS
-                  optional: true
-            {{- end }}
+            - name: CHATRTMGR_LOBBY_URL
+              value: {{ printf "https://%s-lobby:%d" (include "networkclaw-bundle.fullname" .) (.Values.service.lobby.snapshotPort | int) | quote }}
+            - name: CHATRTMGR_MODEL_CONFIG_TOKEN_FILE
+              value: /run/model-snapshot/token
+            - name: CHATRTMGR_MODEL_CONFIG_CA_FILE
+              value: /run/model-snapshot/ca.pem
             {{- if .Values.provider.allowedEgressHosts }}
             - name: NETWORKCLAW_HARNESS_ALLOWED_EGRESS_HOSTS
               value: {{ .Values.provider.allowedEgressHosts | quote }}
             {{- end }}
-            {{- if $secret }}
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secret }}
-                  key: {{ .Values.secrets.openaiApiKey }}
-                  optional: true
-            {{- end }}
           volumeMounts:
+            - name: model-snapshot
+              mountPath: /run/model-snapshot
+              readOnly: true
             - name: runtime-tmp
               mountPath: /tmp/ongrid
           readinessProbe:
-            grpc:
-              port: {{ .Values.service.chatrtmgr.grpcPort }}
+            httpGet:
+              path: /readyz
+              port: metrics
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 3
@@ -220,6 +191,13 @@ spec:
             capabilities:
               drop: [ALL]
       volumes:
+        - name: model-snapshot
+          secret:
+            secretName: {{ .Values.modelSnapshot.existingSecret | quote }}
+            defaultMode: 0440
+            items:
+              - {key: token, path: token}
+              - {key: ca.pem, path: ca.pem}
         - name: runtime-tmp
           {{- if .Values.harness.existingClaim }}
           persistentVolumeClaim:
@@ -273,11 +251,21 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: [/opt/bin/lobby]
           ports:
+            - name: model-snapshot
+              containerPort: {{ .Values.service.lobby.snapshotPort }}
             - name: http
               containerPort: {{ .Values.service.lobby.httpPort }}
             - name: metrics
               containerPort: {{ .Values.service.lobby.metricsPort }}
           env:
+            - name: LOBBY_MODEL_CONFIG_TOKEN_FILE
+              value: /run/model-snapshot/token
+            - name: ONGRID_MODEL_CONFIG_TLS_ADDR
+              value: ":{{ .Values.service.lobby.snapshotPort }}"
+            - name: ONGRID_MODEL_CONFIG_CERT_FILE
+              value: /run/model-snapshot/cert.pem
+            - name: ONGRID_MODEL_CONFIG_KEY_FILE
+              value: /run/model-snapshot/key.pem
             - name: DEV_ENV
               value: dev
             - name: ONGRID_HTTP_ADDR
@@ -358,6 +346,10 @@ spec:
                   name: {{ $secret }}
                   key: {{ .Values.secrets.oidcSecretKey }}
             {{- end }}
+          volumeMounts:
+            - name: model-snapshot
+              mountPath: /run/model-snapshot
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /readyz
@@ -380,3 +372,13 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]
+
+      volumes:
+        - name: model-snapshot
+          secret:
+            secretName: {{ .Values.modelSnapshot.existingSecret | quote }}
+            defaultMode: 0440
+            items:
+              - {key: token, path: token}
+              - {key: cert.pem, path: cert.pem}
+              - {key: key.pem, path: key.pem}

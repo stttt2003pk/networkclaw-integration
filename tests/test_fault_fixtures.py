@@ -268,6 +268,83 @@ class ProviderStubTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(b"loopback", result.stderr.lower())
 
+    def test_model_metadata_excludes_credentials_transcript_and_invalid_parameters(self) -> None:
+        base_url = self._start_provider("stream")
+        parsed = urlsplit(base_url)
+        private = "private-transcript-marker"
+        for key, effort, maximum, revision in (
+            ("model-fixture-v1", "high", 64, 1),
+            ("model-fixture-v2", private, {"secret": private}, 2),
+            ("unknown-private-key", "low", 32, 0),
+        ):
+            connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=2)
+            connection.request("POST", "/v1/chat/completions", json.dumps({
+                "model": "gpt-test", "messages": [{"role": "user", "content": private}],
+                "reasoning_effort": effort, "max_completion_tokens": maximum,
+            }), {"Content-Type": "application/json", "Authorization": "Bearer " + key})
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            response.read()
+            connection.close()
+            event = [value for value in self._read_events(base_url)
+                     if value["event"] == "provider.request_received"][-1]
+            self.assertEqual(event["credential_revision"], revision)
+            self.assertEqual(event["history_messages"], 1)
+            self.assertEqual(event["max_output_tokens"], maximum if type(maximum) is int else None)
+        serialized = self.ledger_path.read_text()
+        for value in (private, "model-fixture-v1", "model-fixture-v2", "unknown-private-key", "Authorization"):
+            self.assertNotIn(value, serialized)
+
+    def test_responses_fixture_stream_and_metadata(self) -> None:
+        base_url = self._start_provider("stream")
+        parsed = urlsplit(base_url)
+        connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=2)
+        connection.request("POST", "/v1/responses", json.dumps({"model": "gpt-fixture", "stream": True,
+                           "input": [{"role": "user", "content": "private input"}],
+                           "reasoning": {"effort": "high"}, "max_output_tokens": 96}),
+                           {"Content-Type": "application/json", "Authorization": "Bearer model-fixture-v2"})
+        response = connection.getresponse()
+        self.assertEqual(response.status, 200)
+        events = [json.loads(line[6:]) for line in response.read().decode().splitlines() if line.startswith("data: ")]
+        connection.close()
+        self.assertEqual(events[-1]["type"], "response.completed")
+        self.assertEqual(events[-1]["response"]["output"][0]["content"][0]["text"], "interop-ok")
+        event = self._read_events(base_url)[0]
+        self.assertEqual((event["api_mode"], event["reasoning_effort"], event["credential_revision"], event["max_output_tokens"]),
+                         ("codex_responses", "high", 2, 96))
+        self.assertNotIn("private input", self.ledger_path.read_text())
+
+    def test_session_fixture_drives_native_skill_tools_and_records_asset_identity(self) -> None:
+        base_url = self._start_provider("session-execution")
+        parsed = urlsplit(base_url)
+        tools = [{"type": "function", "function": {"name": name}} for name in
+                 ("skills_list", "skill_view", "networkclaw_workspace_read")]
+        messages = [{"role": "user", "content": "session-child-skill private-task-marker"}]
+        expected_hash = "sha256:" + "a" * 64
+        for expected in ("skills_list", "skill_view", None):
+            connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=2)
+            connection.request("POST", "/v1/chat/completions", json.dumps({"model": "gpt-fixture", "tools": tools,
+                "messages": messages, "reasoning_effort": "low", "max_completion_tokens": 256}),
+                {"Content-Type": "application/json", "Authorization": "Bearer model-fixture-v1"})
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            value = json.loads(response.read())
+            connection.close()
+            message = value['choices'][0]['message']
+            if expected:
+                self.assertEqual(message['tool_calls'][0]['function']['name'], expected)
+                messages.extend([message, {"role": "tool", "content": json.dumps({"success": True,
+                    "name": "workspace-inspection", "version": "1.0.0", "content_hash": expected_hash,
+                    "content": "private-skill-body-marker"}) if expected == 'skill_view' else '{}'}])
+            else:
+                self.assertTrue(message['content'])
+        observed = [e for e in self._read_events(base_url) if e['event'] == 'provider.execution_observed'][-1]
+        self.assertEqual(observed['skill_content_hash'], expected_hash)
+        self.assertEqual(observed['skill_version'], '1.0.0')
+        self.assertEqual(observed['max_output_tokens'], 256)
+        for private in ('private-task-marker', 'private-skill-body-marker', 'model-fixture-v1'):
+            self.assertNotIn(private, self.ledger_path.read_text())
+
     def _start_provider(self, mode: str) -> str:
         environment = os.environ.copy()
         environment["NETWORKCLAW_PROVIDER_STUB_EVENTS"] = str(self.ledger_path)

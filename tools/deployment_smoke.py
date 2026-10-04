@@ -27,9 +27,11 @@ def check_tcp(host: str, port: int, timeout: float) -> bool:
         return True
 
 
-def request_json(url: str, method: str, payload: dict[str, str] | None, token: str | None, origin: str, timeout: float) -> tuple[int, dict]:
+def request_json(url: str, method: str, payload: dict[str, str] | None, token: str | None, origin: str | None, timeout: float) -> tuple[int, dict]:
     data = json.dumps(payload).encode() if payload is not None else None
-    headers = {"Content-Type": "application/json", "Origin": origin}
+    headers = {"Content-Type": "application/json"}
+    if origin:
+        headers["Origin"] = origin
     if token:
         headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(url, data=data, headers=headers, method=method)

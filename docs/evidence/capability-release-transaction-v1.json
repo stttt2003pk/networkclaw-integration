@@ -1,0 +1,76 @@
+{
+  "schema_version": "capability-release-transaction-acceptance.v1",
+  "task": "R-08",
+  "status": "passed",
+  "implementation": {
+    "networkclaw_migration": "internal/lobby/database/migrations/028_capability_release_transactions.up.sql",
+    "networkclaw_repository": "internal/lobby/repository/capability_release_pg.go",
+    "networkclaw_wiring": "cmd/lobby/main.go",
+    "durable_tables": [
+      "capability_releases",
+      "capability_release_audits"
+    ],
+    "transaction_order": [
+      "catalog_version",
+      "tool_revision",
+      "toolset_membership",
+      "skill_revision",
+      "skill_dependency",
+      "agent_revision",
+      "agent_binding",
+      "release_status",
+      "audit"
+    ]
+  },
+  "acceptance": {
+    "import_failure_stages": [
+      "catalog",
+      "tools",
+      "toolsets",
+      "skills",
+      "dependencies",
+      "agents",
+      "bindings",
+      "release",
+      "audit"
+    ],
+    "transition_failure_stages": [
+      "transition",
+      "transition-retire",
+      "transition-release",
+      "transition-agents",
+      "transition-catalog",
+      "audit"
+    ],
+    "partial_rows_after_failure": 0,
+    "duplicate_import_idempotent": true,
+    "published_release_replaced_as_retired": true,
+    "old_release_rollback": true,
+    "rollback_keeps_new_release": true,
+    "rollback_creates_audit": true,
+    "vendor_changed": false
+  },
+  "verification": {
+    "database": "PostgreSQL 16 local fixture migrated through 028",
+    "commands": [
+      "go test -race ./internal/lobby/repository -run TestCapabilityRelease -count=1 -v",
+      "go test -race ./...",
+      "make test",
+      "make capability-release-admin-contract-test",
+      "git diff --check"
+    ],
+    "results": {
+      "repository_transaction_tests": "passed: 2 tests",
+      "networkclaw_race": "passed",
+      "integration_suite": "passed: 109 tests",
+      "admin_contract": "passed: 7 tests",
+      "diff_check": "passed"
+    }
+  },
+  "repository_state": {
+    "networkclaw": "dirty working tree; R-08 changes are in NetworkClaw",
+    "networkclaw_harness": "unchanged by R-08",
+    "networkclaw_integration": "dirty working tree; evidence and plan updated"
+  },
+  "next_task": "R-09"
+}

@@ -84,6 +84,7 @@ class BundleTests(unittest.TestCase):
         result = json.loads(verified.stdout)
         self.assertTrue(result["customized"])
         self.assertIsNone(result["sources"]["networkclaw"]["commit"])
+        self.assertEqual(result["sources"]["harness"]["path"], "networkclaw-harness")
 
     def test_generated_code_index_is_excluded_from_bundle(self) -> None:
         index = self.harness / ".codebase-memory"
@@ -295,6 +296,26 @@ class BundleTests(unittest.TestCase):
         )
         self.assertNotEqual(verified.returncode, 0)
         self.assertIn("payload checksum mismatch", verified.stderr)
+
+    def test_manifest_source_path_must_locate_the_archived_source(self) -> None:
+        result = self.build()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        rewritten = self.base / "wrong-source-path.tar.gz"
+        with tarfile.open(self.output, "r:gz") as source, tarfile.open(rewritten, "w:gz") as target:
+            for member in source.getmembers():
+                if member.name == "networkclaw-bundle/manifest/bundle-manifest.json":
+                    manifest = json.load(source.extractfile(member))
+                    manifest["sources"]["harness"]["path"] = "networkclaw"
+                    data = json.dumps(manifest).encode()
+                    member.size = len(data)
+                    target.addfile(member, io.BytesIO(data))
+                else:
+                    target.addfile(member, source.extractfile(member) if member.isfile() else None)
+        digest = hashlib.sha256(rewritten.read_bytes()).hexdigest()
+        rewritten.with_suffix(rewritten.suffix + ".sha256").write_text(f"{digest}  {rewritten.name}\n")
+        verified = subprocess.run([sys.executable, str(VERIFIER), str(rewritten)], text=True, capture_output=True)
+        self.assertNotEqual(verified.returncode, 0)
+        self.assertIn("bundle source path does not locate harness", verified.stderr)
 
     def test_manifest_metadata_is_scanned_by_verifier(self) -> None:
         result = self.build()

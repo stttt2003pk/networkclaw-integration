@@ -36,6 +36,9 @@ spec:
     - name: http
       port: {{ .Values.service.lobby.httpPort }}
       targetPort: http
+    - name: model-snapshot
+      port: {{ .Values.service.lobby.snapshotPort }}
+      targetPort: model-snapshot
     - name: metrics
       port: {{ .Values.service.lobby.metricsPort }}
       targetPort: metrics

@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import time
+import uuid
 from typing import Any
 
 
@@ -84,7 +85,7 @@ def command_record(result: CommandResult) -> dict[str, Any]:
     }
 
 
-def cleanup_evidence() -> dict[str, Any]:
+def cleanup_evidence(baseline: dict[str, Any] | None = None, run_id: str | None = None) -> dict[str, Any]:
     """Capture bounded post-matrix leak evidence for processes and test-owned temp paths."""
     process_rows: list[dict[str, str]] = []
     ps = subprocess.run(["ps", "-axo", "pid=,command="], capture_output=True, text=True, check=False)
@@ -99,15 +100,31 @@ def cleanup_evidence() -> dict[str, Any]:
     for pattern in ("/tmp/gw-*", "/tmp/rtg-*", "/tmp/rtg-crash-*", "/tmp/ncg-*"):
         temp_roots.extend(str(path) for path in sorted(Path("/tmp").glob(pattern.removeprefix("/tmp/"))))
     sockets = [path for path in temp_roots if Path(path).is_socket()]
+    previous = baseline or {}
+    old_processes = {(row["pid"], row["command"]) for row in previous.get("active_gateway_or_provider_processes", [])}
+    process_rows = [row for row in process_rows if (row["pid"], row["command"]) not in old_processes]
+    if run_id and process_rows:
+        # Other acceptance jobs may be running concurrently. The marker is
+        # inherited only by this matrix's descendants, including orphaned hosts.
+        # Environment output is used in memory and never included in evidence.
+        process_env = subprocess.run(["ps", "eww", "-axo", "pid=,command="], capture_output=True, text=True, check=True)
+        marker = "NETWORKCLAW_COMBINATION_RUN_ID=" + run_id
+        owned = {line.strip().split(None, 1)[0] for line in process_env.stdout.splitlines() if marker in line}
+        process_rows = [row for row in process_rows if row["pid"] in owned]
+    sockets = [path for path in sockets if path not in previous.get("socket_paths", [])]
     return {
         "status": "clean" if not process_rows and not sockets else "leaks_detected",
         "active_gateway_or_provider_processes": process_rows,
         "test_temp_roots": temp_roots,
         "socket_paths": sockets,
+        "preexisting_process_count": len(old_processes),
     }
 
 
 def main() -> int:
+    cleanup_baseline = cleanup_evidence()
+    run_id = uuid.uuid4().hex
+    os.environ["NETWORKCLAW_COMBINATION_RUN_ID"] = run_id
     skip_real = os.environ.get("NETWORKCLAW_SKIP_REAL_INTEROP") == "1"
     os.environ.setdefault("NETWORKCLAW_INTEGRATION_PATH", str(ROOT))
     REPORT_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -139,6 +156,12 @@ def main() -> int:
              "-count=1"],
             networkclaw,
             parse_go=True,
+        ))
+        commands.append(run_command(
+            "model-clock-and-pin-loss",
+            ["go", "test", "-json", "-race", "./internal/chatrtmgr/modelbroker", "./internal/chatrtmgr/forwarder",
+             "-run=Test(ControlledPolling|SynchronizationFreshness|ModelPin|ModelPrepare|GatewayForwarderReplays)", "-count=1"],
+            networkclaw, parse_go=True,
         ))
         commands.append(run_command(
             "go-cross-repository",
@@ -194,6 +217,7 @@ def main() -> int:
                 "tests/test_delegation.py", "tests/test_host.py",
                 "tests/test_hermes_host_adapter.py", "tests/test_interaction_control.py",
                 "tests/test_session_runtime.py", "tests/test_projection.py",
+                "tests/test_native_execution_delegation.py", "tests/test_native_execution_history.py",
             ],
             harness,
         ))
@@ -208,6 +232,9 @@ def main() -> int:
         return result is not None and result.tests.get(test) == "pass"
 
     scenarios = [
+        {"id": "independent_execution_faults", "kind": "profile_free_native_cross_process", "command": "go-cross-repository", "tests": ["TestIndependentExecutionFaultMatrix"], "reason_codes": ["turn_already_active", "user_cancel", "stale_epoch", "epoch_takeover", "provider_stream_interrupted", "provider_transport_reset"]},
+        {"id": "controlled_broker_clock_and_lost_pin", "kind": "go_controlled_clock_and_forwarder_support", "command": "model-clock-and-pin-loss", "tests": ["TestControlledPollingConfirmsAndExpiresSnapshot", "TestModelPinConcurrentRunsAndSnapshotReplacement", "TestModelPinFencesLostProcessAndClosedForwarder", "TestGatewayForwarderReplaysCanonicalTailWithoutStartingTurn"], "reason_codes": ["model_config_stale", "model_config_pin_lost"]},
+
         {"id": "durable_child_authority_restart", "kind": "cross_process_postgresql", "command": "durable-child-replay-restart", "tests": [], "reason_codes": ["cross_tenant_rejected", "stale_epoch_rejected"]},
         {"id": "legacy_gateway_parity_and_rollback", "kind": "cross_repository", "command": "go-cross-repository", "tests": ["TestLegacyGatewayVisibleContentParity/stream", "TestLegacyGatewayVisibleContentParity/reset", "TestLegacyGatewayVisibleContentParity/todo", "TestLegacyGatewayVisibleContentParity/fence"], "reason_codes": ["turn_timeout", "stale_epoch"]},
         {"id": "single_session_vertical_flow", "kind": "cross_repository", "command": "go-cross-repository", "tests": ["TestSingleSessionVerticalFlow"], "reason_codes": ["completed", "provider_succeeded"]},
@@ -234,7 +261,7 @@ def main() -> int:
         else:
             scenario["status"] = "passed" if result.passed else "failed"
 
-    cleanup = cleanup_evidence()
+    cleanup = cleanup_evidence(cleanup_baseline, run_id)
     report = {
         "schema_version": "1",
         "matrix": "networkclaw-go-harness-v1",

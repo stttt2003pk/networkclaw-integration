@@ -266,6 +266,12 @@ def main() -> int:
                     ("rebuild", [str(integration_python), str(integration / "tools" / "build-bundle.py"), "--networkclaw", str(networkclaw), "--harness", str(harness), "--integration", str(integration), "--output", str(workspace / "rebuilt.tar.gz")], integration),
                     ("verify_rebuild", [str(integration_python), str(integration / "tools" / "verify-bundle.py"), str(workspace / "rebuilt.tar.gz")], integration),
                 ]
+                if "capability_release" in json.loads((bundle / "manifest/bundle-manifest.json").read_text()):
+                    stages.insert(5, ("capability_check", [
+                        str(integration_python), str(integration / "tools/capability-release.py"), "check",
+                        "--manifest", str(integration / "release/manifests/capability-release.v1.json"),
+                        "--harness", str(harness), "--report", str(workspace / "capability-check.json"),
+                    ], integration))
                 for name, command, cwd in stages:
                     if not run(name, command, cwd, env, report, (workspace,)):
                         report["failures"].append(name)

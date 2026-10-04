@@ -1,0 +1,669 @@
+{
+  "schema_version": "hermes-session-execution-alignment-acceptance.v1",
+  "date": "2026-10-05",
+  "plan": "docs/plan/hermes-session-execution-alignment-plan.md",
+  "status": "completed",
+  "tasks": {
+    "T01": "completed",
+    "T02": "completed",
+    "T03": "completed",
+    "T04": "completed",
+    "T05": "completed",
+    "T06": "completed",
+    "T07": "completed",
+    "T08": "completed",
+    "T09": "completed",
+    "T10": "completed",
+    "T11": "completed"
+  },
+  "completed_tasks": 11,
+  "total_tasks": 11,
+  "artifacts": {
+    "bundle": ".integration-state/artifacts/session-execution-bundle-final.tar.gz",
+    "bundle_sha256": "5c844ec6645075d984e0a05eaac9e325efb11a9216d0f4851c36ec9dc484f839",
+    "image_tag": "networkclaw:session-execution-final",
+    "image_id": "sha256:67f79a32d863cf9de6de32c639351bb847faf6bca3f0d29c66b66fe95f0dca81",
+    "oci_archive": ".integration-state/artifacts/ubuntu-22.04-linux-amd64/networkclaw-linux-amd64.oci.tar",
+    "oci_archive_sha256": "37d9c13a924e06bdbbf348edc02f06e8503d1af25a6fe3392b5ca61b0c5f89ec",
+    "source_input": "verified_bundle",
+    "customized": true,
+    "capability_release_hash": "sha256:71c198b48baa1e070abece89b96f1494da6c3fc0a21b71af5e05763011fe0382",
+    "profile_count": 0,
+    "tool_count": 101,
+    "skill_count": 59,
+    "sources": {
+      "harness": {
+        "commit": "43796097255c2c98ea0a945867ca51d4c14bb445",
+        "customized": true,
+        "diff_sha256": "a3d35dfa391cfad5aa6760896a5490656f871d4bf8ef3cf3ca773b79b8f121f5",
+        "dirty": true,
+        "path": "networkclaw-harness",
+        "tree_sha256": "bec1ba50565683437ed7c6a742bef4899ba0dc5ea2b14e121cd2d33e29c228e5",
+        "vendor_tree_sha256": "3ffc95f6f7f3c3bb30d9bf22c35635b3e627e51e290ebcc1b14a7129feb089fb"
+      },
+      "integration": {
+        "commit": "40766839fec594d27802414edbacd208e9f6bb2c",
+        "customized": true,
+        "diff_sha256": "82704594b3d9f9c3d054d7dd728f7188a7e3e0e5cf325ca1772afacd33b77df1",
+        "dirty": true,
+        "path": "integration",
+        "tree_sha256": "a080ca68ed5aad30be70e85c91a12e8f250298c7d672add1453dc86636def6c4",
+        "vendor_tree_sha256": null
+      },
+      "networkclaw": {
+        "commit": "a8532becc6d47c4e1936cb35b9773de8988da490",
+        "customized": true,
+        "diff_sha256": "86573969d5d49773464bad405ee4ac61e202e52e20f038472efac3961025e1a6",
+        "dirty": true,
+        "path": "networkclaw",
+        "tree_sha256": "3dd4d7889827ec8d81809ed0505bd9ba91ab380cf0613f2d32e4b0b3ccf5b698",
+        "vendor_tree_sha256": null
+      }
+    },
+    "builder": {
+      "os": "ubuntu",
+      "version": "22.04"
+    },
+    "packager": {
+      "os": "darwin",
+      "version": "26.5.2"
+    },
+    "runtime": {
+      "base_image": "python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7",
+      "os": "debian",
+      "version": "12"
+    },
+    "platform": "linux/amd64"
+  },
+  "verification": {
+    "public_status": "passed",
+    "public_checks": [
+      "manager_listeners_start_before_lobby",
+      "two_lobbies_consistent_snapshot_and_304",
+      "production_30_second_polling_convergence",
+      "published_release_without_profiles",
+      "public_empty_session_create_no_profile",
+      "complete_independent_host_grant",
+      "public_sync_native_skill_and_workspace_tool",
+      "public_sync_native_child_delegation",
+      "cross_lobby_same_session_model_switch",
+      "two_distinct_managers_publicly_routed",
+      "foreign_owner_denied",
+      "public_websocket_same_name_different_connection",
+      "actual_frozen_skill_content_verified",
+      "actual_child_skill_and_narrowed_tools",
+      "platform_child_allocations_released",
+      "platform_native_runtime_associations_saved",
+      "broker_30_second_rotation_convergence",
+      "credential_rotation_preserves_native_history",
+      "real_manager_restart_old_run_not_reexecuted",
+      "real_manager_restart_new_turn_recovers_native_tip",
+      "real_gpt_public_ordinary_session",
+      "browser_login",
+      "browser_no_profile_first_send",
+      "browser_same_session_model_switch",
+      "browser_no_agent_catalog",
+      "service_descendants_and_sockets_cleaned",
+      "diagnostics_no_credentials"
+    ],
+    "matrix_status": "passed",
+    "matrix_scenarios": [
+      {
+        "command": "go-cross-repository",
+        "id": "independent_execution_faults",
+        "kind": "profile_free_native_cross_process",
+        "reason_codes": [
+          "turn_already_active",
+          "user_cancel",
+          "stale_epoch",
+          "epoch_takeover",
+          "provider_stream_interrupted",
+          "provider_transport_reset"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestIndependentExecutionFaultMatrix"
+        ]
+      },
+      {
+        "command": "model-clock-and-pin-loss",
+        "id": "controlled_broker_clock_and_lost_pin",
+        "kind": "go_controlled_clock_and_forwarder_support",
+        "reason_codes": [
+          "model_config_stale",
+          "model_config_pin_lost"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestControlledPollingConfirmsAndExpiresSnapshot",
+          "TestModelPinConcurrentRunsAndSnapshotReplacement",
+          "TestModelPinFencesLostProcessAndClosedForwarder",
+          "TestGatewayForwarderReplaysCanonicalTailWithoutStartingTurn"
+        ]
+      },
+      {
+        "command": "durable-child-replay-restart",
+        "id": "durable_child_authority_restart",
+        "kind": "cross_process_postgresql",
+        "reason_codes": [
+          "cross_tenant_rejected",
+          "stale_epoch_rejected"
+        ],
+        "status": "passed",
+        "tests": []
+      },
+      {
+        "command": "go-cross-repository",
+        "id": "legacy_gateway_parity_and_rollback",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "turn_timeout",
+          "stale_epoch"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestLegacyGatewayVisibleContentParity/stream",
+          "TestLegacyGatewayVisibleContentParity/reset",
+          "TestLegacyGatewayVisibleContentParity/todo",
+          "TestLegacyGatewayVisibleContentParity/fence"
+        ]
+      },
+      {
+        "command": "go-cross-repository",
+        "id": "single_session_vertical_flow",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "completed",
+          "provider_succeeded"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestSingleSessionVerticalFlow"
+        ]
+      },
+      {
+        "command": "go-cross-repository",
+        "id": "multi_session_multiplexing",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "completed"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestProviderBackedSessionsMultiplexWithoutCrossTalk"
+        ]
+      },
+      {
+        "command": "go-cross-repository",
+        "id": "same_session_admission_cancel_steer",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "turn_already_active",
+          "user_cancel"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestSameSessionAdmissionAndActiveControl"
+        ]
+      },
+      {
+        "command": "go-cross-repository",
+        "id": "lease_takeover_and_stale_control",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "stale_epoch",
+          "epoch_takeover"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestLeaseTakeoverFencesOldOwnerAcrossProcess"
+        ]
+      },
+      {
+        "command": "go-cross-repository",
+        "id": "provider_and_transport_interruption",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "provider_interrupted",
+          "provider_stream_interrupted",
+          "provider_transport_reset"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestProviderStreamingDropIsNotCompleted",
+          "TestProviderStreamAndTransportFaultCombination",
+          "TestReasonCodesEndToEndThroughClient"
+        ]
+      },
+      {
+        "command": "go-cross-repository",
+        "id": "request_replay_and_hash_conflict",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "request_id_conflict"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestRequestReplayAndHashConflictAcrossProcess"
+        ]
+      },
+      {
+        "command": "go-process-recovery",
+        "id": "sigkill_replacement_same_workspace",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "harness_unavailable",
+          "epoch_takeover"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestPythonHarness_SigkillThenReplacementEpoch",
+          "TestPythonHarness_KillDuringProviderThenReplacementResumesSameWorkspace"
+        ]
+      },
+      {
+        "command": "go-client-transport-support",
+        "id": "eof_fanout_and_pending_backpressure",
+        "kind": "cross_process_support",
+        "reason_codes": [
+          "harness_unavailable",
+          "backpressure"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestClient_ChildEOFFailsAllPendingCalls",
+          "TestClientPending_BoundsBufferedFrames"
+        ]
+      },
+      {
+        "command": "go-lifecycle-fencing-support",
+        "id": "lease_revoke_and_late_frame_fencing",
+        "kind": "go_lifecycle_support",
+        "reason_codes": [],
+        "status": "passed",
+        "tests": [
+          "TestHarnessHandler_LeaseVersionAdvancesButOldEpochCannotRevoke",
+          "TestHarnessHandler_RevokeRejectsLateControl",
+          "TestHarnessHandler_TakeoverFencesLateEpochFrames",
+          "TestHarnessHandler_ReducesToFirstTerminalAndDropsLateEvents"
+        ]
+      },
+      {
+        "command": "go-cross-repository",
+        "id": "parent_child_interrupt_scope",
+        "kind": "cross_repository",
+        "reason_codes": [
+          "user_cancel"
+        ],
+        "status": "passed",
+        "tests": [
+          "TestParentChildInterruptScopeIsSessionLocal"
+        ]
+      },
+      {
+        "command": "harness-recovery-delegation",
+        "id": "unknown_side_effect_no_replay_and_exactly_once_release",
+        "kind": "harness_supporting",
+        "reason_codes": [
+          "unknown_side_effect",
+          "delegation_broker_closed"
+        ],
+        "status": "passed",
+        "tests": []
+      }
+    ],
+    "matrix_commands": [
+      {
+        "name": "integration-fixtures",
+        "command": [
+          "<python3.12>",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "<integration>/tests",
+          "-v"
+        ],
+        "returncode": 0,
+        "duration_seconds": 141.259
+      },
+      {
+        "name": "canonical-transport-preservation",
+        "command": [
+          "go",
+          "test",
+          "-json",
+          "-race",
+          "./internal/shared/harness",
+          "./internal/chatrtmgr/forwarder",
+          "./internal/chatrtmgr/transport/grpc",
+          "./internal/lobby/usecase",
+          "-run=Test(FrameCanonicalJSON|ConstructedFrameCanonicalJSON|GatewayCanonicalEnvelope|DecodeStreamChunk|ValidateCanonicalEvent)",
+          "-count=1"
+        ],
+        "returncode": 0,
+        "duration_seconds": 6.27
+      },
+      {
+        "name": "model-clock-and-pin-loss",
+        "command": [
+          "go",
+          "test",
+          "-json",
+          "-race",
+          "./internal/chatrtmgr/modelbroker",
+          "./internal/chatrtmgr/forwarder",
+          "-run=Test(ControlledPolling|SynchronizationFreshness|ModelPin|ModelPrepare|GatewayForwarderReplays)",
+          "-count=1"
+        ],
+        "returncode": 0,
+        "duration_seconds": 2.223
+      },
+      {
+        "name": "go-cross-repository",
+        "command": [
+          "go",
+          "test",
+          "-json",
+          "-race",
+          "./tests/integration/harnessinterop",
+          "-count=1"
+        ],
+        "returncode": 0,
+        "duration_seconds": 248.161
+      },
+      {
+        "name": "durable-child-replay-restart",
+        "command": [
+          "<python3.12>",
+          "<integration>/tools/run-child-replay-acceptance.py"
+        ],
+        "returncode": 0,
+        "duration_seconds": 14.555
+      },
+      {
+        "name": "frontend-process-ledger",
+        "command": [
+          "<python3.12>",
+          "<integration>/tools/check_event_process.py"
+        ],
+        "returncode": 0,
+        "duration_seconds": 3.09
+      },
+      {
+        "name": "go-process-recovery",
+        "command": [
+          "go",
+          "test",
+          "-json",
+          "-race",
+          "./internal/shared/harness",
+          "-run=TestPythonHarness_(TakeoverFencesOldOwner|SigkillThenReplacementEpoch|ParallelSessionsKeepResponsesCorrelated|KillDuringProviderThenReplacementResumesSameWorkspace)",
+          "-count=1"
+        ],
+        "returncode": 0,
+        "duration_seconds": 47.4
+      },
+      {
+        "name": "go-client-transport-support",
+        "command": [
+          "go",
+          "test",
+          "-json",
+          "-race",
+          "./internal/shared/harness",
+          "-run=Test(Client_ChildEOFFailsAllPendingCalls|ClientPending_BoundsBufferedFrames)",
+          "-count=1"
+        ],
+        "returncode": 0,
+        "duration_seconds": 2.019
+      },
+      {
+        "name": "go-lifecycle-fencing-support",
+        "command": [
+          "go",
+          "test",
+          "-json",
+          "-race",
+          "./internal/chatsvc/session",
+          "-run=TestHarnessHandler_(LeaseVersionAdvancesButOldEpochCannotRevoke|RevokeRejectsLateControl|TakeoverFencesLateEpochFrames|ReducesToFirstTerminalAndDropsLateEvents)",
+          "-count=1"
+        ],
+        "returncode": 0,
+        "duration_seconds": 2.448
+      },
+      {
+        "name": "harness-recovery-delegation",
+        "command": [
+          "<harness>/scripts/run_tests.sh",
+          "-q",
+          "tests/test_recovery.py",
+          "tests/test_recovery_subprocess.py",
+          "tests/test_delegation.py",
+          "tests/test_host.py",
+          "tests/test_hermes_host_adapter.py",
+          "tests/test_interaction_control.py",
+          "tests/test_session_runtime.py",
+          "tests/test_projection.py",
+          "tests/test_native_execution_delegation.py",
+          "tests/test_native_execution_history.py"
+        ],
+        "returncode": 0,
+        "duration_seconds": 31.755
+      }
+    ],
+    "bundle_self_test_status": "passed",
+    "bundle_self_test_steps": [
+      {
+        "name": "archive_safety",
+        "exit_code": 0
+      },
+      {
+        "name": "create_harness_venv",
+        "exit_code": 0
+      },
+      {
+        "name": "install_harness_locked_dependencies",
+        "exit_code": 0
+      },
+      {
+        "name": "install_harness_project",
+        "exit_code": 0
+      },
+      {
+        "name": "create_integration_venv",
+        "exit_code": 0
+      },
+      {
+        "name": "install_integration_dependencies",
+        "exit_code": 0
+      },
+      {
+        "name": "doctor",
+        "exit_code": 0
+      },
+      {
+        "name": "source_tests",
+        "exit_code": 0
+      },
+      {
+        "name": "integration_tests",
+        "exit_code": 0
+      },
+      {
+        "name": "combination_matrix",
+        "exit_code": 0
+      },
+      {
+        "name": "manifest_verify",
+        "exit_code": 0
+      },
+      {
+        "name": "capability_check",
+        "exit_code": 0
+      },
+      {
+        "name": "rebuild",
+        "exit_code": 0
+      },
+      {
+        "name": "verify_rebuild",
+        "exit_code": 0
+      }
+    ],
+    "ubuntu_native_cases": 30,
+    "integration_tool_tests": 141,
+    "image_deployment": {
+      "status": "passed",
+      "checks": [
+        "verified_bundle_image_identity",
+        "amd64_nonroot_image",
+        "isolated_full_migrations",
+        "tls_model_broker",
+        "no_profile_create",
+        "native_ordinary_turn",
+        "native_frozen_skill",
+        "session_close",
+        "image_web2_ready",
+        "public_and_diagnostic_no_credentials"
+      ],
+      "runtime_platform": "linux/amd64",
+      "image_id": "sha256:67f79a32d863cf9de6de32c639351bb847faf6bca3f0d29c66b66fe95f0dca81",
+      "bundle_sha256": "5c844ec6645075d984e0a05eaac9e325efb11a9216d0f4851c36ec9dc484f839",
+      "stage": "session-skill",
+      "container_removed": true,
+      "isolated_database_removed": true,
+      "temporary_workspace_removed": true
+    }
+  },
+  "security": {
+    "schema_version": "session-execution-security.v1",
+    "bundle_sha256": "5c844ec6645075d984e0a05eaac9e325efb11a9216d0f4851c36ec9dc484f839",
+    "image_archive_sha256": "37d9c13a924e06bdbbf348edc02f06e8503d1af25a6fe3392b5ca61b0c5f89ec",
+    "model_credentials_scan": "passed",
+    "secret_findings": 0,
+    "misconfiguration_findings": 0,
+    "vulnerabilities": {
+      "HIGH": 34,
+      "CRITICAL": 4
+    },
+    "security_scan_exit_code": 1,
+    "publishable": false,
+    "limitations": [
+      "customized dirty source snapshots",
+      "cached immutable base has fixable high and critical system package vulnerabilities"
+    ],
+    "scanner_db_update_skipped": true
+  },
+  "cleanup": {
+    "schema_version": "session-execution-cleanup.v1",
+    "status": "clean",
+    "dedicated_runner_removed": true,
+    "temporary_source_snapshots_removed": true,
+    "gateway_or_provider_processes": 0,
+    "test_sockets": 0,
+    "existing_development_apps_preserved": [
+      "chatrtmgr",
+      "lobby",
+      "vite"
+    ],
+    "development_database_migrated": false,
+    "final_artifacts_retained": true,
+    "all_three_diff_checks_exit_code": 0,
+    "all_three_staged_diff_checks_exit_code": 0
+  },
+  "repository_status": {
+    "integration": {
+      "dirty": true,
+      "status_entries": 123,
+      "diff_check_exit_code": 0,
+      "staged_diff_check_exit_code": 0,
+      "existing_edits_preserved": true,
+      "committed_by_task": false
+    },
+    "networkclaw": {
+      "dirty": true,
+      "status_entries": 228,
+      "diff_check_exit_code": 0,
+      "staged_diff_check_exit_code": 0,
+      "existing_edits_preserved": true,
+      "committed_by_task": false
+    },
+    "harness": {
+      "dirty": true,
+      "status_entries": 44,
+      "diff_check_exit_code": 0,
+      "staged_diff_check_exit_code": 0,
+      "existing_edits_preserved": true,
+      "committed_by_task": false
+    }
+  },
+  "evidence": [
+    {
+      "path": ".integration-state/evidence/session-public-final.json",
+      "sha256": "828a66aa04ba1c68188ec5a535aeb6c018093d96030f8836876a7d4cb7b51755"
+    },
+    {
+      "path": ".integration-state/evidence/session-dev-lifecycle.json",
+      "sha256": "6aa0c4f0f5c3e89e814c48d3063f7b580f6b49b866fffd8b1f8a71495577a1df"
+    },
+    {
+      "path": ".integration-state/evidence/session-combination-final.json",
+      "sha256": "b12afedaea9fbb8f07ed1f99bc78466069d3c6e4b9db3688fff9168e0ccabadc"
+    },
+    {
+      "path": ".integration-state/evidence/session-combination-final.md",
+      "sha256": "2832d26b0c4330f3755282ce5d91f8b1cae8e2e6b48da68d2653888a26e58479"
+    },
+    {
+      "path": ".integration-state/evidence/session-bundle-self-final.json",
+      "sha256": "bff74e2b2102ab4bd18a44c14488808b86ac77dad0a4784e194ec066a527f889"
+    },
+    {
+      "path": ".integration-state/evidence/session-image-deployment.json",
+      "sha256": "bbf157f1574daa93d5e4ff9d4c4fdbcc3f5d39a7b83390b2e0b3e8bd3bb19311"
+    },
+    {
+      "path": ".integration-state/evidence/session-image-security-summary.json",
+      "sha256": "14a208dbae5670e6c755e350fbc2f414b21fe336186cbf77283decfa263363fe"
+    },
+    {
+      "path": ".integration-state/evidence/session-final-cleanup.json",
+      "sha256": "5ed654112ffd6311856dc8bd00f756cdbcc73368b7455553aaa219868dc00655"
+    },
+    {
+      "path": ".integration-state/evidence/session-lobby-race-final.log",
+      "sha256": "57433caa2a8a60c867adb997ed983e3c9a4f9dfc40f305e5dc05a38e64f8151d"
+    },
+    {
+      "path": ".integration-state/evidence/session-tools-final-v3.log",
+      "sha256": "0414f61d7d8a902f0a3e9445b131e496c6b98000e5a169be22abaabc53fc22bd"
+    },
+    {
+      "path": ".integration-state/evidence/session-ubuntu-native-v5.log",
+      "sha256": "b60ca59f36e1e5238ef488e29d34aec2d154a26b3f6438335a2fad30726e034e"
+    },
+    {
+      "path": ".integration-state/evidence/session-ubuntu-image-context-final.log",
+      "sha256": "9370796cd03854b6344428a317b3ef11263abbe7840e2c406d87e536568f99d3"
+    },
+    {
+      "path": ".integration-state/evidence/session-verify-bundle-final.log",
+      "sha256": "37f975e25405ae06be659de3189c2b0ef217c51e7b5db9d9f7f5009b04ce8f35"
+    },
+    {
+      "path": ".integration-state/evidence/session-image-context-final.identity.json",
+      "sha256": "2c159d9ebe7c2bdd749e37a38f06bef650c3d02e7db0d704e3dcec43ca90170e"
+    }
+  ],
+  "limitations": [
+    "public release security gate failed: 34 HIGH and 4 CRITICAL base-system vulnerabilities; Trivy DB update skipped",
+    "customized dirty snapshots; unsigned local bundle",
+    "SessionDB, binding and workspace must be durably accessible to recovery nodes",
+    "Lobby page exchange is best-effort; not native transcript",
+    "unknown old turns are not automatically replayed",
+    "no claim that unrelated Go whole-tree tests pass; historical Catalog CRUD/migration 029 failure retained",
+    "final acceptance documents were updated after artifact freeze; archived source tree identities remain unchanged",
+    "development database was not migrated"
+  ]
+}

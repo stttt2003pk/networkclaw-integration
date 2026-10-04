@@ -1,0 +1,423 @@
+{
+  "acceptance_scope": "R-11 cross-repository capability release acceptance",
+  "ci_environment_limitations": [
+    "A separate full ci-test.sh attempt was not used as R-11 pass evidence: its generic integration stage required helm and the root runner caused unrelated full-suite path/permission failures.",
+    "The R-11-specific gates and database acceptance completed successfully on the same Ubuntu 22.04 amd64 runner after its temporary tool/path setup."
+  ],
+  "clean_snapshot_determinism": {
+    "check": {
+      "checks": {
+        "agent_references": true,
+        "release_hash": true,
+        "skill_dependencies": true,
+        "toolset_membership": true,
+        "vendor_gate": true
+      },
+      "errors": [],
+      "manifest_hash": "sha256:91f41efa5f9d6278b6d36841d2961a38e6eff6fd173d89c2ce1a81c314b9629e",
+      "reason_code": null,
+      "schema_version": "capability-release-check.v1",
+      "status": "passed"
+    },
+    "counts": {
+      "agents": 1,
+      "skills": 59,
+      "tools": 101,
+      "toolsets": 64
+    },
+    "hermes": {
+      "source_ref": "6005aa1fd9aac8b1024ace50fec8cd1c85a04bae",
+      "source_repository": "https://github.com/NousResearch/hermes-agent.git",
+      "vendor_manifest_hash": "sha256:810db4fe84c4f081fff7176f94c438ff380cd3278b72765c6bc27a57d5537074",
+      "vendor_tree_hash": "sha256:e42c3a456717d5a70eb6c493e20b27192d25af934fea57b1a8ae98f45ae019f2"
+    },
+    "object_order_equal": true,
+    "release_hash": "sha256:91f41efa5f9d6278b6d36841d2961a38e6eff6fd173d89c2ce1a81c314b9629e",
+    "repeated_compile_equal": true,
+    "repeated_discovery_equal": true,
+    "sources": {
+      "harness": {
+        "commit": "00e5a264c069b32ac99ab4414d1d8d1f92f1d44f",
+        "diff_hash": null,
+        "dirty": false,
+        "ref": "00e5a264c069b32ac99ab4414d1d8d1f92f1d44f",
+        "repository": "networkclaw-harness",
+        "tree_hash": "sha256:e650e9b0a09e069880e942a31dd552d45e99a7268de68d30bec265fbea1d982b"
+      },
+      "integration": {
+        "commit": "c92aefebe51dc979ac36958912b8404af412528e",
+        "diff_hash": null,
+        "dirty": false,
+        "ref": "c92aefebe51dc979ac36958912b8404af412528e",
+        "repository": "networkclaw-integration",
+        "tree_hash": "sha256:1aa220a2471d18ba23377f0f45b841a6556736d0d560dcf538e6328c5dfcf910"
+      },
+      "networkclaw": {
+        "commit": "e75233aa503eac238fa4e789f110598a71cb1cbe",
+        "diff_hash": null,
+        "dirty": false,
+        "ref": "e75233aa503eac238fa4e789f110598a71cb1cbe",
+        "repository": "NetworkClaw",
+        "tree_hash": "sha256:268ed1b032bc29f45e9695ebf58f03fc610596c764d8af11bb29713eaea1a816"
+      }
+    },
+    "status": "passed",
+    "validation_mode": "ephemeral-clean-snapshot"
+  },
+  "cleanup": {
+    "runner_processes_stopped": true,
+    "temporary_postgres_schema_removed": true,
+    "temporary_workspace_removed": true,
+    "vendor_tree_edited_directly": false
+  },
+  "compiled_manifest": {
+    "agent_skill_bindings": 1,
+    "agent_tool_bindings": 3,
+    "agents": 1,
+    "published_manifest_unchanged": true,
+    "repeated_import_idempotent": true,
+    "skill_dependencies": 2,
+    "skills": 59,
+    "tools": 101,
+    "toolset_memberships": 1499,
+    "toolsets": 64
+  },
+  "database_tests": {
+    "reason_codes": [
+      "import_transaction_failed",
+      "release_hash_conflict",
+      "dependency_unavailable",
+      "stale_revision",
+      "published_release_conflict"
+    ],
+    "required_tests": [
+      "TestCapabilityReleaseAcceptanceAtomicFailures",
+      "TestCapabilityReleaseAcceptanceCompiledManifest",
+      "TestCapabilityMigrationPublishedSessionsAndRollback"
+    ],
+    "session_checks": [
+      "legacy-write-rejected",
+      "legacy-session-preserved",
+      "candidate-pool-not-authorized",
+      "stale-create-rejected",
+      "failed-publish-preserved-current",
+      "publish-rollback-kept-old-hashes",
+      "real-harness-resume",
+      "real-harness-changed-snapshot-rejected",
+      "real-harness-three-turns",
+      "migration-command-readonly",
+      "migration-up-down",
+      "expired-skill-rejected",
+      "denied-dependency-rejected",
+      "retired-fork-preserved",
+      "tampered-grant-rejected",
+      "publication-lock-contention-rejected"
+    ],
+    "transaction_failure_stages": [
+      "catalog",
+      "tools",
+      "toolsets",
+      "skills",
+      "dependencies",
+      "agents",
+      "bindings",
+      "release",
+      "audit"
+    ]
+  },
+  "date": "2026-10-02",
+  "full_ci_status": "not_passed",
+  "next_step": "Pin real three-repository revisions, complete generic Ubuntu CI on a suitable runner, verify signed bundle/image provenance, then explicitly import/publish.",
+  "platforms": {
+    "macos_arm64": {
+      "release_hash": "sha256:5b0d28278fc2a575e5b376d714c247d41b300bfb51cd1d0d31bd1cc30e688aea",
+      "run_report": {
+        "architecture": "arm64",
+        "compiled_import": {
+          "counts_after_repeated_import": {
+            "agent_revision_skills": 1,
+            "agent_revision_tools": 3,
+            "agent_revisions": 1,
+            "capability_catalog_versions": 1,
+            "capability_release_audits": 1,
+            "capability_releases": 1,
+            "capability_tool_revisions": 101,
+            "capability_toolset_tools": 1499,
+            "capability_toolsets": 64,
+            "skill_catalog": 59,
+            "skill_revision_dependencies": 2,
+            "skill_revisions": 59
+          },
+          "published_manifest_unchanged": true,
+          "release_hash": "sha256:5b0d28278fc2a575e5b376d714c247d41b300bfb51cd1d0d31bd1cc30e688aea",
+          "status": "passed"
+        },
+        "database_tests_passed": [
+          "TestCapabilityMigrationPublishedSessionsAndRollback",
+          "TestCapabilityReleaseAcceptanceAtomicFailures",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/agents",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/audit",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/bindings",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/catalog",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/dependencies",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/release",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/skills",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/tools",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/toolsets",
+          "TestCapabilityReleaseAcceptanceCompiledManifest"
+        ],
+        "hermes": {
+          "source_ref": "6005aa1fd9aac8b1024ace50fec8cd1c85a04bae",
+          "source_repository": "https://github.com/NousResearch/hermes-agent.git",
+          "vendor_manifest_hash": "sha256:810db4fe84c4f081fff7176f94c438ff380cd3278b72765c6bc27a57d5537074",
+          "vendor_tree_hash": "sha256:e42c3a456717d5a70eb6c493e20b27192d25af934fea57b1a8ae98f45ae019f2"
+        },
+        "platform": "darwin",
+        "release_hash": "sha256:5b0d28278fc2a575e5b376d714c247d41b300bfb51cd1d0d31bd1cc30e688aea",
+        "schema_version": "capability-release-acceptance.v1",
+        "session_checks": [
+          "legacy-write-rejected",
+          "legacy-session-preserved",
+          "candidate-pool-not-authorized",
+          "stale-create-rejected",
+          "failed-publish-preserved-current",
+          "publish-rollback-kept-old-hashes",
+          "real-harness-resume",
+          "real-harness-changed-snapshot-rejected",
+          "real-harness-three-turns",
+          "migration-command-readonly",
+          "migration-up-down",
+          "expired-skill-rejected",
+          "denied-dependency-rejected",
+          "retired-fork-preserved",
+          "tampered-grant-rejected",
+          "publication-lock-contention-rejected"
+        ],
+        "sources": {
+          "harness": {
+            "commit": "43796097255c2c98ea0a945867ca51d4c14bb445",
+            "diff_hash": "sha256:483d74685894e2b67508a19560c9723d1a715d5dd97a42fb82b570c781ffefbc",
+            "dirty": true,
+            "ref": "43796097255c2c98ea0a945867ca51d4c14bb445",
+            "repository": "networkclaw-harness",
+            "tree_hash": "sha256:e650e9b0a09e069880e942a31dd552d45e99a7268de68d30bec265fbea1d982b"
+          },
+          "integration": {
+            "commit": "40766839fec594d27802414edbacd208e9f6bb2c",
+            "diff_hash": "sha256:4246991aefa35a95eabda1331eee08982c359fce3f4f483aff9ed123ec95a880",
+            "dirty": true,
+            "ref": "40766839fec594d27802414edbacd208e9f6bb2c",
+            "repository": "networkclaw-integration",
+            "tree_hash": "sha256:fa6309e1f96396aec5a0e1f82154e057ffff5738321ee712aa4f8d71d8dd19c6"
+          },
+          "networkclaw": {
+            "commit": "a8532becc6d47c4e1936cb35b9773de8988da490",
+            "diff_hash": "sha256:f762e9e9c633034700d39b1dcfa5c0b6043ffcec96505a559c1ea2441f0d0dc8",
+            "dirty": true,
+            "ref": "a8532becc6d47c4e1936cb35b9773de8988da490",
+            "repository": "NetworkClaw",
+            "tree_hash": "sha256:c1f27af5072a12501f4cf133e22e9653c81b031ea46501e09b85233492ff99ad"
+          }
+        },
+        "stages": [
+          {
+            "exit_code": 0,
+            "name": "release_gates"
+          },
+          {
+            "exit_code": 0,
+            "name": "release_failures"
+          },
+          {
+            "exit_code": 0,
+            "name": "harness_skills"
+          },
+          {
+            "exit_code": 0,
+            "name": "admin_contract"
+          },
+          {
+            "exit_code": 0,
+            "name": "transactions_and_sessions"
+          }
+        ],
+        "status": "passed",
+        "temporary_workspace_removed": true
+      },
+      "source_state": "dirty working trees preserved",
+      "sources": {
+        "harness": {
+          "commit": "43796097255c2c98ea0a945867ca51d4c14bb445",
+          "dirty": true,
+          "tree_hash": "sha256:e650e9b0a09e069880e942a31dd552d45e99a7268de68d30bec265fbea1d982b"
+        },
+        "integration": {
+          "commit": "40766839fec594d27802414edbacd208e9f6bb2c",
+          "dirty": true,
+          "tree_hash": "sha256:fa6309e1f96396aec5a0e1f82154e057ffff5738321ee712aa4f8d71d8dd19c6"
+        },
+        "networkclaw": {
+          "commit": "a8532becc6d47c4e1936cb35b9773de8988da490",
+          "dirty": true,
+          "tree_hash": "sha256:c1f27af5072a12501f4cf133e22e9653c81b031ea46501e09b85233492ff99ad"
+        }
+      },
+      "stages": [
+        "release_gates",
+        "release_failures",
+        "harness_skills",
+        "admin_contract",
+        "transactions_and_sessions"
+      ],
+      "status": "passed",
+      "vendor_manifest_hash": "sha256:810db4fe84c4f081fff7176f94c438ff380cd3278b72765c6bc27a57d5537074",
+      "vendor_source_ref": "6005aa1fd9aac8b1024ace50fec8cd1c85a04bae",
+      "vendor_tree_hash": "sha256:e42c3a456717d5a70eb6c493e20b27192d25af934fea57b1a8ae98f45ae019f2"
+    },
+    "ubuntu_22_04_amd64": {
+      "release_hash": "sha256:e124afc939eeb760489a32dfafa404ef6cca5b905c27d6ac27081975107eb077",
+      "run_report": {
+        "architecture": "x86_64",
+        "compiled_import": {
+          "counts_after_repeated_import": {
+            "agent_revision_skills": 1,
+            "agent_revision_tools": 3,
+            "agent_revisions": 1,
+            "capability_catalog_versions": 1,
+            "capability_release_audits": 1,
+            "capability_releases": 1,
+            "capability_tool_revisions": 101,
+            "capability_toolset_tools": 1499,
+            "capability_toolsets": 64,
+            "skill_catalog": 59,
+            "skill_revision_dependencies": 2,
+            "skill_revisions": 59
+          },
+          "published_manifest_unchanged": true,
+          "release_hash": "sha256:e124afc939eeb760489a32dfafa404ef6cca5b905c27d6ac27081975107eb077",
+          "status": "passed"
+        },
+        "database_tests_passed": [
+          "TestCapabilityMigrationPublishedSessionsAndRollback",
+          "TestCapabilityReleaseAcceptanceAtomicFailures",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/agents",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/audit",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/bindings",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/catalog",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/dependencies",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/release",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/skills",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/tools",
+          "TestCapabilityReleaseAcceptanceAtomicFailures/toolsets",
+          "TestCapabilityReleaseAcceptanceCompiledManifest"
+        ],
+        "hermes": {
+          "source_ref": "6005aa1fd9aac8b1024ace50fec8cd1c85a04bae",
+          "source_repository": "https://github.com/NousResearch/hermes-agent.git",
+          "vendor_manifest_hash": "sha256:810db4fe84c4f081fff7176f94c438ff380cd3278b72765c6bc27a57d5537074",
+          "vendor_tree_hash": "sha256:c8263a8187831ae6a7ce33c1af02562ed100510d684d9a9a3615f5b5c9cd3917"
+        },
+        "platform": "linux",
+        "release_hash": "sha256:e124afc939eeb760489a32dfafa404ef6cca5b905c27d6ac27081975107eb077",
+        "schema_version": "capability-release-acceptance.v1",
+        "session_checks": [
+          "legacy-write-rejected",
+          "legacy-session-preserved",
+          "candidate-pool-not-authorized",
+          "stale-create-rejected",
+          "failed-publish-preserved-current",
+          "publish-rollback-kept-old-hashes",
+          "real-harness-resume",
+          "real-harness-changed-snapshot-rejected",
+          "real-harness-three-turns",
+          "migration-command-readonly",
+          "migration-up-down",
+          "expired-skill-rejected",
+          "denied-dependency-rejected",
+          "retired-fork-preserved",
+          "tampered-grant-rejected",
+          "publication-lock-contention-rejected"
+        ],
+        "sources": {
+          "harness": {
+            "commit": "8c073c651b2294abd4c30b32a45a6924c23abed2",
+            "diff_hash": null,
+            "dirty": false,
+            "ref": "8c073c651b2294abd4c30b32a45a6924c23abed2",
+            "repository": "networkclaw-harness",
+            "tree_hash": "sha256:5896771c43e3803c5deaa8b07945a3300eb3e621e16ea0a501f0db38059f4f6b"
+          },
+          "integration": {
+            "commit": "6ba8a3b568c2f4624070fc3c34ddc17a93e36f7e",
+            "diff_hash": null,
+            "dirty": false,
+            "ref": "6ba8a3b568c2f4624070fc3c34ddc17a93e36f7e",
+            "repository": "networkclaw-integration",
+            "tree_hash": "sha256:3670380325bf561abf5a0e64e96d9a534e166525dfcc810ff4004797f267316d"
+          },
+          "networkclaw": {
+            "commit": "5ef8940d705ad7f610eefdf6d62a73913655296d",
+            "diff_hash": null,
+            "dirty": false,
+            "ref": "5ef8940d705ad7f610eefdf6d62a73913655296d",
+            "repository": "NetworkClaw",
+            "tree_hash": "sha256:a79cb84b8a6842e5579153d7dfb5efebc56252a401dcfba98a731bb8a8d6e2da"
+          }
+        },
+        "stages": [
+          {
+            "exit_code": 0,
+            "name": "release_gates"
+          },
+          {
+            "exit_code": 0,
+            "name": "release_failures"
+          },
+          {
+            "exit_code": 0,
+            "name": "harness_skills"
+          },
+          {
+            "exit_code": 0,
+            "name": "admin_contract"
+          },
+          {
+            "exit_code": 0,
+            "name": "transactions_and_sessions"
+          }
+        ],
+        "status": "passed",
+        "temporary_workspace_removed": true
+      },
+      "sources": {
+        "harness": {
+          "commit": "8c073c651b2294abd4c30b32a45a6924c23abed2",
+          "tree_hash": "sha256:5896771c43e3803c5deaa8b07945a3300eb3e621e16ea0a501f0db38059f4f6b"
+        },
+        "integration": {
+          "commit": "6ba8a3b568c2f4624070fc3c34ddc17a93e36f7e",
+          "tree_hash": "sha256:3670380325bf561abf5a0e64e96d9a534e166525dfcc810ff4004797f267316d"
+        },
+        "networkclaw": {
+          "commit": "5ef8940d705ad7f610eefdf6d62a73913655296d",
+          "tree_hash": "sha256:a79cb84b8a6842e5579153d7dfb5efebc56252a401dcfba98a731bb8a8d6e2da"
+        }
+      },
+      "stages": [
+        "release_gates",
+        "release_failures",
+        "harness_skills",
+        "admin_contract",
+        "transactions_and_sessions"
+      ],
+      "status": "passed",
+      "validation_mode": "ephemeral-clean-snapshot",
+      "vendor_manifest_hash": "sha256:810db4fe84c4f081fff7176f94c438ff380cd3278b72765c6bc27a57d5537074",
+      "vendor_source_ref": "6005aa1fd9aac8b1024ace50fec8cd1c85a04bae",
+      "vendor_tree_hash": "sha256:c8263a8187831ae6a7ce33c1af02562ed100510d684d9a9a3615f5b5c9cd3917"
+    }
+  },
+  "publishable": false,
+  "schema_version": "capability-release-acceptance.v1",
+  "status": "passed"
+}

@@ -1,0 +1,89 @@
+{
+  "archive_hash": "sha256:7141fdd0abdd73c85f0275b69ed3953f70993191e49495a6989302d3b623f1ca",
+  "checks": [
+    {
+      "name": "bundle_self_test",
+      "platform": "macos",
+      "stages": [
+        {
+          "exit_code": 0,
+          "name": "archive_safety"
+        },
+        {
+          "exit_code": 0,
+          "name": "create_harness_venv"
+        },
+        {
+          "exit_code": 0,
+          "name": "install_harness_locked_dependencies"
+        },
+        {
+          "exit_code": 0,
+          "name": "install_harness_project"
+        },
+        {
+          "exit_code": 0,
+          "name": "create_integration_venv"
+        },
+        {
+          "exit_code": 0,
+          "name": "install_integration_dependencies"
+        },
+        {
+          "exit_code": 0,
+          "name": "doctor"
+        },
+        {
+          "exit_code": 0,
+          "name": "source_tests"
+        },
+        {
+          "exit_code": 0,
+          "name": "integration_tests"
+        },
+        {
+          "exit_code": 0,
+          "name": "combination_matrix"
+        },
+        {
+          "exit_code": 0,
+          "name": "manifest_verify"
+        },
+        {
+          "exit_code": 0,
+          "name": "capability_check"
+        },
+        {
+          "exit_code": 0,
+          "name": "rebuild"
+        },
+        {
+          "exit_code": 0,
+          "name": "verify_rebuild"
+        }
+      ],
+      "status": "passed",
+      "workspace_removed": true
+    },
+    {
+      "architecture": "amd64",
+      "capability_check_exit_code": 0,
+      "checks": {
+        "agent_references": true,
+        "release_hash": true,
+        "skill_dependencies": true,
+        "toolset_membership": true,
+        "vendor_gate": true
+      },
+      "name": "isolated_verify_and_capability_check",
+      "platform": "ubuntu-22.04",
+      "status": "passed",
+      "verify_exit_code": 0,
+      "workspace_removed": true
+    }
+  ],
+  "release_hash": "sha256:51a38c4023afb8278a2d23335de29c0e1a7a26044d28245b6ecf00b0caec6f57",
+  "schema_version": "capability-bundle-isolated.v2",
+  "status": "passed",
+  "workspace_removed": true
+}

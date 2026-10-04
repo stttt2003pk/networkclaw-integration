@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://networkclaw.local/schemas/capability-snapshot-v1.schema.json",
+  "title": "NetworkClaw capability contract v1",
+  "type": "object",
+  "required": ["contract_version", "catalog", "agent", "tools", "skills", "snapshot"],
+  "properties": {
+    "contract_version": {"type": "string", "const": "capability.v1"},
+    "catalog": {"$ref": "#/$defs/catalog"},
+    "agent": {"$ref": "#/$defs/agent"},
+    "tools": {"type": "array", "items": {"$ref": "#/$defs/tool"}, "uniqueItems": true},
+    "skills": {"type": "array", "items": {"$ref": "#/$defs/skill"}, "uniqueItems": true},
+    "snapshot": {"$ref": "#/$defs/sessionSnapshot"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"},
+    "catalog": {
+      "type": "object",
+      "required": ["version", "source", "status"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "enum": ["hermes", "networkclaw", "composite"]},
+        "status": {"type": "string", "enum": ["draft", "published", "retired"]}
+      },
+      "additionalProperties": false
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "revision", "version", "schema_hash", "source", "availability", "status"],
+      "properties": {
+        "name": {"$ref": "#/$defs/id"},
+        "revision": {"type": "integer", "minimum": 1},
+        "version": {"type": "string", "minLength": 1},
+        "schema_hash": {"$ref": "#/$defs/hash"},
+        "source": {"type": "string", "minLength": 1},
+        "availability": {"type": "string", "enum": ["registered", "available", "unavailable"]},
+        "status": {"type": "string", "enum": ["active", "retired"]},
+        "required_capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    },
+    "skill": {
+      "type": "object",
+      "required": ["skill_id", "version", "content_hash", "metadata_hash", "manifest_hash", "source", "release_ref", "release_status", "trust_state", "platforms", "session_platforms", "required_toolsets", "required_tools", "fallback_for_toolsets", "fallback_for_tools", "config_schema", "support_files"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/id"},
+        "version": {"type": "string", "minLength": 1},
+        "content_hash": {"$ref": "#/$defs/hash"},
+        "metadata_hash": {"$ref": "#/$defs/hash"},
+        "manifest_hash": {"$ref": "#/$defs/hash"},
+        "source": {"type": "string", "minLength": 1},
+        "release_ref": {"type": "string", "minLength": 1},
+        "release_status": {"type": "string", "enum": ["available", "unavailable", "revoked"]},
+        "trust_state": {"type": "string", "enum": ["trusted", "quarantined", "unknown"]},
+        "platforms": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "session_platforms": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "required_toolsets": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "required_tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "fallback_for_toolsets": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "fallback_for_tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "config_schema": {"type": "object"},
+        "support_files": {"type": "array", "items": {"$ref": "#/$defs/supportFile"}}
+      },
+      "additionalProperties": false
+    },
+    "supportFile": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "agent": {
+      "type": "object",
+      "required": ["agent_id", "revision", "revision_hash", "requested_toolsets", "allowed_tools", "denied_tools"],
+      "properties": {
+        "agent_id": {"$ref": "#/$defs/id"},
+        "revision": {"type": "integer", "minimum": 1},
+        "revision_hash": {"$ref": "#/$defs/hash"},
+        "requested_toolsets": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "allowed_tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "denied_tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    },
+    "sessionSnapshot": {
+      "type": "object",
+      "required": ["session_id", "catalog_version", "agent_revision", "toolset_revisions", "allowed_tools", "skills", "snapshot_hash"],
+      "properties": {
+        "session_id": {"$ref": "#/$defs/id"},
+        "catalog_version": {"type": "string", "minLength": 1},
+        "agent_revision": {"type": "integer", "minimum": 1},
+        "toolset_revisions": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1}},
+        "allowed_tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "skills": {"type": "array", "items": {"$ref": "#/$defs/sessionSkill"}, "uniqueItems": true},
+        "snapshot_hash": {"$ref": "#/$defs/hash"}
+      },
+      "additionalProperties": false
+    },
+    "sessionSkill": {
+      "type": "object",
+      "required": ["skill_id", "version", "content_hash", "mode", "resolved_dependencies"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/id"},
+        "version": {"type": "string", "minLength": 1},
+        "content_hash": {"$ref": "#/$defs/hash"},
+        "mode": {"type": "string", "enum": ["available", "auto_load", "disabled"]},
+        "config_hash": {"$ref": "#/$defs/hash"},
+        "resolved_dependencies": {
+          "type": "object",
+          "required": ["toolsets", "tools"],
+          "properties": {
+            "toolsets": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+            "tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true}
+          },
+          "additionalProperties": false
+        },
+        "omitted_reason": {"type": "string", "enum": ["skill_not_found", "skill_not_published", "skill_not_trusted", "skill_toolset_not_loaded", "skill_tool_not_authorized", "skill_config_missing"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}

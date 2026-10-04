@@ -1,0 +1,88 @@
+{
+  "contract_version": "session-execution.v1",
+  "session_id": "session-child",
+  "release": {
+    "release_id": "fixture-release",
+    "release_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "catalog_version": "fixture-v1"
+  },
+  "policy": {
+    "system_prompt": "你是可靠的会话助手。",
+    "permission_mode": "read_only",
+    "turn_budget": {
+      "max_steps": 8,
+      "max_retries": 2,
+      "max_actions": 16,
+      "timeout_seconds": 60
+    },
+    "delegation_policy": {
+      "enabled": false,
+      "max_depth": 0,
+      "max_concurrent_children": 0,
+      "child_budget": {
+        "max_iterations": 4,
+        "timeout_seconds": 30,
+        "max_output_bytes": 4096
+      }
+    }
+  },
+  "requested_toolsets": [
+    {
+      "name": "networkclaw",
+      "revision": 1
+    },
+    {
+      "name": "skills",
+      "revision": 1
+    },
+    {
+      "name": "delegation",
+      "revision": 1
+    }
+  ],
+  "tools": [
+    {
+      "name": "networkclaw_workspace_read",
+      "revision": 1,
+      "version": "1.0.0",
+      "schema_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source": "networkclaw"
+    },
+    {
+      "name": "skills_list",
+      "revision": 1,
+      "version": "1.0.0",
+      "schema_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source": "hermes"
+    },
+    {
+      "name": "skill_view",
+      "revision": 1,
+      "version": "1.0.0",
+      "schema_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source": "hermes"
+    }
+  ],
+  "skills": [
+    {
+      "skill_id": "workspace-inspection",
+      "revision": 1,
+      "version": "1.0.0",
+      "content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "metadata_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "manifest_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "release_ref": "builtin:workspace-inspection@1.0.0",
+      "mode": "available",
+      "config_hash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "resolved_dependencies": {
+        "toolsets": [
+          "networkclaw"
+        ],
+        "tools": [
+          "networkclaw_workspace_read"
+        ]
+      }
+    }
+  ],
+  "snapshot_hash": "sha256:9b436c5f82b6c767080371d5c728e9eceab76475a1f14f94f3e1a079c06fff42"
+}

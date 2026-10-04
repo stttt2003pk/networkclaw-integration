@@ -6,9 +6,18 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 from dotenv import dotenv_values
+
+if __package__:
+    from .local_image import build_local_image
+    from .model_setup import bootstrap_models, runtime_environment, snapshot_secrets
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from local_image import build_local_image
+    from model_setup import bootstrap_models, runtime_environment, snapshot_secrets
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,7 +56,13 @@ def environment() -> dict[str, str]:
 
 def run(action: str, env: dict[str, str]) -> int:
     command = ["docker", "compose", "-f", str(COMPOSE_FILE)]
+    runtime = runtime_environment(env)
+    runtime.setdefault("NETWORKCLAW_MODEL_SECRET_DIR", str(ROOT / ".integration-state/model-secrets"))
     if action == "up":
+        snapshot_secrets(Path(runtime["NETWORKCLAW_MODEL_SECRET_DIR"]), container_readable=True)
+        subprocess.run([*command, "down", "--remove-orphans"], cwd=ROOT, env=runtime, check=True)
+        if env.get("NETWORKCLAW_REBUILD", "1") != "0":
+            build_local_image(env["NETWORKCLAW_IMAGE"])
         command += ["up", "-d", "--wait"]
     elif action == "down":
         command += ["down"]
@@ -55,7 +70,10 @@ def run(action: str, env: dict[str, str]) -> int:
         command += ["ps", "--all"]
     else:
         raise SystemExit(f"unsupported action: {action}")
-    return subprocess.run(command, cwd=ROOT, env=env, check=False).returncode
+    result = subprocess.run(command, cwd=ROOT, env=runtime, check=False).returncode
+    if result == 0 and action == "up":
+        bootstrap_models(f"http://127.0.0.1:{env.get('LOBBY_HTTP_PORT', '8080')}", env)
+    return result
 
 
 def main() -> int:

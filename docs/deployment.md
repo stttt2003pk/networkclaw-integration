@@ -76,11 +76,13 @@ python3 tools/deployment_smoke.py --url http://127.0.0.1:5174 \
   --metrics-url http://127.0.0.1:9100 --chatrtmgr 127.0.0.1:50052
 ```
 
+`make compose-up` 每次都会先关闭已有 Compose 栈，再从当前源码重建 bundle、Go/Web 产物和 Linux/amd64 镜像，最后启动并等待健康状态。只有显式设置 `NETWORKCLAW_REBUILD=0` 才跳过重建；旧栈仍会先关闭。
+
 Compose 在 `http://localhost:5174/` 直接提供前端，不使用 Ingress；默认本地种子账号为 `admin` / `admin`。将对应值注入 `NETWORKCLAW_SMOKE_EMAIL/PASSWORD` 后可加 `--session`。客户环境应通过环境变量覆盖本地默认账号。停止使用 `make compose-down`，默认保留 PostgreSQL 数据卷；只有明确需要清理测试数据时才直接执行带 `-v` 的 Compose 命令。
 
 ## 本地 kind 手动验收
 
-Provider 配置默认读取相邻 NetworkClaw 仓库的 `.env`；也可在 Integration 仓库创建不提交的 `.env.kind`，用 `NETWORKCLAW_PROVIDER_ENV_FILE=.env.kind make kind-up` 指定。已导出的同名环境变量优先。`OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`、`OPENAI_MODELS` 经 Kubernetes Secret 引用注入 Pod，不进入 Helm values；`OPENAI_MODELS` 由 kind Job 同步到前端模型目录。请勿将真实凭据写入 Git、命令参数或生成清单。
+首次启动可从相邻 NetworkClaw 的未提交 `.env` 导入模型；也可用 `NETWORKCLAW_PROVIDER_ENV_FILE=.env.kind make kind-up` 指定。工具经管理员 API 将连接、模型与凭证写入 Lobby，已有配置时跳过导入。provider 环境变量不传给 chatrtmgr 或 Gateway；后续修改使用管理员模型页面。Lobby 与 chatrtmgr 使用挂载 Secret 中的 Bearer token 和 TLS 证书同步私有 snapshot，每 30 秒拉取，超过 5 分钟未成功确认则拒绝新轮次。生产应提供与 Lobby Service DNS 匹配的受信证书；本地工具生成临时证书。凭证不进入 Helm values、公共模型目录或 bundle。请勿将真实凭据写入 Git、命令参数或生成清单。
 
 已有本地 kind 集群和 ingress-nginx controller 时，可用 Integration 工具在独立 namespace 启动分布式验收拓扑。默认使用 `kind-ongrid` context、`networkclaw:ci-linux-amd64` 本地镜像，并从相邻 `NetworkClaw` 工作树读取 migration；可用 `--context`、`--cluster`、`--image`、`--networkclaw` 覆盖。工具会先加载镜像，在 namespace 内创建临时 PostgreSQL、Redis、单节点 etcd，提交并等待 migration Job 完成，然后以 etcd 发现安装 **2 个 lobby、2 个 chatrtmgr 和 1 个 web2**，Ingress 的 `/` 指向 web2。每个 chatrtmgr 通过 Pod IP 向 `/services` 注册；生成的 smoke 登录凭据保存在 `.integration-state/kind/manual-credentials.env`（权限 `0600`）：
 
@@ -89,6 +91,8 @@ make kind-up
 kubectl --context kind-ongrid -n ingress-nginx port-forward \
   svc/ingress-nginx-controller 8081:80
 ```
+
+`make kind-up` 每次都会先卸载本工具管理的 release 和 namespace，再重建并加载当前镜像，重新应用依赖、数据库迁移和模型目录 seed，最后重新安装 Helm release 并等待 rollout。设置 `NETWORKCLAW_REBUILD=0` 可复用已有镜像，但不会跳过清理、迁移或 rollout。
 
 保持 port-forward 运行即可从浏览器访问 `http://networkclaw.localhost:8081/`，入口经过 Ingress 和 web2。kind 本地默认种子账号为 `admin` / `admin`；另开终端运行完整 smoke：
 

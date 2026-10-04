@@ -9,7 +9,7 @@ LABEL org.opencontainers.image.title="NetworkClaw combined runtime" \
       io.networkclaw.harness.commit="$HARNESS_COMMIT" \
       io.networkclaw.integration.commit="$INTEGRATION_COMMIT" \
       io.networkclaw.bundle.sha256="$BUNDLE_SHA256"
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/opt/bin:$PATH PYTHONPATH=/opt/networkclaw-harness/src:/opt/networkclaw-harness/vendor/hermes
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HERMES_DISABLE_LAZY_INSTALLS=1 PATH=/opt/bin:$PATH PYTHONPATH=/opt/networkclaw-harness/src:/opt/networkclaw-harness/vendor/hermes
 WORKDIR /opt/networkclaw
 COPY harness/requirements.lock harness/requirements.lock
 COPY harness/offline/wheels/ /opt/wheels/
@@ -19,10 +19,12 @@ RUN python -m pip install --no-index --find-links /opt/wheels --require-hashes -
 COPY --chown=networkclaw:networkclaw harness/src/ /opt/networkclaw-harness/src/
 COPY --chown=networkclaw:networkclaw harness/vendor/hermes/ /opt/networkclaw-harness/vendor/hermes/
 COPY --chown=networkclaw:networkclaw harness/upstream/ /opt/networkclaw-harness/upstream/
+COPY --chown=networkclaw:networkclaw release/ /opt/networkclaw/release/
 COPY --chown=networkclaw:networkclaw bin/ /opt/bin/
 COPY --chown=networkclaw:networkclaw web2/dist/ /opt/networkclaw-web2/dist/
 COPY --chown=networkclaw:networkclaw harness-entrypoint /opt/bin/networkclaw-harness
 RUN chmod 0755 /opt/bin/networkclaw-harness
 ENV CHATRTMGR_PROCESS_TARGET=gateway CHATRTMGR_GATEWAY_BINARY_PATH=/opt/bin/networkclaw-harness
+ENV NETWORKCLAW_CAPABILITY_RELEASES='[{"manifest":"/opt/networkclaw/release/manifests/capability-release.v1.json","asset_root":"/opt/networkclaw-harness"}]'
 USER 65532:65532
 ENTRYPOINT ["/opt/bin/chatrtmgr"]

@@ -12,7 +12,20 @@ import shlex
 import subprocess
 import sys
 import re
+import socket
+import tempfile
+import time
 from pathlib import Path
+
+if __package__:
+    from .local_image import build_local_image
+    from .model_setup import bootstrap_models, snapshot_secrets
+    from .deployment_smoke import get
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from local_image import build_local_image
+    from model_setup import bootstrap_models, snapshot_secrets
+    from deployment_smoke import get
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,9 +43,10 @@ def run(command: list[str], *, input_text: str | None = None) -> str:
         capture_output=True,
     )
     if result.returncode:
-        if result.stdout:
+        private_input = input_text and ('kind: Secret' in input_text or '"kind": "Secret"' in input_text)
+        if result.stdout and not private_input:
             print(result.stdout, file=sys.stderr, end="")
-        if result.stderr:
+        if result.stderr and not private_input:
             print(result.stderr, file=sys.stderr, end="")
         raise SystemExit(f"command failed ({result.returncode}): {shlex.join(command)}")
     return result.stdout
@@ -300,52 +314,35 @@ spec:
         raise
 
 
-def apply_model_catalog_seed(namespace: str, postgres_image: str, provider_env: dict[str, str]) -> None:
-    models = list(dict.fromkeys(item.strip() for item in (provider_env.get("OPENAI_MODELS") or provider_env.get("OPENAI_MODEL", "")).split(",") if item.strip()))
-    if not models:
-        return
-    for model in models:
-        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", model):
-            raise SystemExit(f"invalid OPENAI_MODELS entry: {model!r}")
-    statements = [
-        "INSERT INTO catalog_models (id, provider, model_id, base_url, display_name, enabled, deployed) VALUES",
-    ]
-    rows = []
-    for model in models:
-        rows.append(f"    ('seed-openai-{model}', 'openai', '{model}', '', '{model}', true, true)")
-    statements.append(",\n".join(rows) + "\nON CONFLICT (provider, model_id) DO NOTHING;")
-    configured = ", ".join(f"'{model}'" for model in models)
-    statements.append(f"UPDATE catalog_models SET deployed = false WHERE id LIKE 'seed-openai-%' AND model_id NOT IN ({configured});")
-    sql = "\n".join(statements) + "\n"
-    configmap = "networkclaw-kind-model-catalog"
-    run(["kubectl", "-n", namespace, "delete", "configmap", configmap, "--ignore-not-found"])
-    run(["kubectl", "-n", namespace, "create", "configmap", configmap, f"--from-literal=catalog.sql={sql}"])
-    run(["kubectl", "-n", namespace, "delete", "job", "networkclaw-kind-model-catalog", "--ignore-not-found"])
-    job = f"""\
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: networkclaw-kind-model-catalog
-  namespace: {namespace}
-spec:
-  backoffLimit: 0
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-        - name: seed-models
-          image: {quote(postgres_image)}
-          imagePullPolicy: Never
-          env:
-            - name: PGPASSWORD
-              valueFrom: {{secretKeyRef: {{name: networkclaw-runtime, key: ONGRID_DB_PASSWORD}}}}
-          command: [/bin/sh, -ec]
-          args: ["psql -X -v ON_ERROR_STOP=1 -h postgres -U ongrid -d ongrid -f /seed/catalog.sql"]
-          volumeMounts: [{{name: seed, mountPath: /seed, readOnly: true}}]
-      volumes: [{{name: seed, configMap: {{name: {configmap}}}}}]
-"""
-    run(["kubectl", "apply", "-f", "-"], input_text=job)
-    run(["kubectl", "-n", namespace, "wait", "--for=condition=complete", "job/networkclaw-kind-model-catalog", "--timeout=180s"])
+def bootstrap_kind_models(args: argparse.Namespace, env: dict[str, str]) -> bool:
+    if not any(env.get(prefix + suffix) for prefix in ("OPENAI", "ZHIPU") for suffix in ("_MODEL", "_MODELS")):
+        return False
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    command = ["kubectl", "--context", args.context, "-n", args.namespace, "port-forward",
+               f"svc/{args.release}-networkclaw-bundle-lobby", f"{port}:8080", "--address=127.0.0.1"]
+    process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        base = f"http://127.0.0.1:{port}"
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and process.poll() is None:
+            try:
+                if get(base + "/readyz", 0.5)[0] == 200:
+                    bootstrap_models(base, env, origin="http://networkclaw.localhost:8081")
+                    return True
+            except OSError:
+                pass
+            time.sleep(0.2)
+        raise RuntimeError("Lobby bootstrap port-forward did not become ready")
+    finally:
+        if process.poll() is None:
+            process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
 
 
 def write_credentials(path: Path, values: dict[str, str]) -> None:
@@ -384,12 +381,13 @@ def up(args: argparse.Namespace) -> None:
     migration_dir = locate_migrations(networkclaw)
     env_path = provider_env_path(args.provider_env_file, networkclaw)
     provider_env = read_env_file(env_path) if env_path else {}
-    for key in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL", "OPENAI_MODELS", "NETWORKCLAW_HARNESS_ALLOWED_MODELS"):
-        if os.environ.get(key):
-            provider_env[key] = os.environ[key]
+    provider_env.update({key: value for key, value in os.environ.items() if value})
     repository, tag, digest = image_parts(args.image)
     if digest:
         raise SystemExit("--image digest is not supported for kind-up; use a local tagged image")
+    down(args)
+    if os.environ.get("NETWORKCLAW_REBUILD", "1") != "0":
+        build_local_image(args.image)
     for image in (args.image, args.postgres_image, args.redis_image, args.etcd_image):
         run(["docker", "image", "inspect", image])
         run(["kind", "load", "docker-image", image, "--name", args.cluster])
@@ -402,11 +400,6 @@ def up(args: argparse.Namespace) -> None:
     jwt_secret = os.environ.get("NETWORKCLAW_KIND_JWT_SECRET") or old_credentials.get("NETWORKCLAW_KIND_JWT_SECRET") or read_runtime_secret(namespace, "ONGRID_JWT_SECRET") or secrets.token_urlsafe(32)
     oidc_secret = os.environ.get("NETWORKCLAW_KIND_OIDC_SECRET") or old_credentials.get("NETWORKCLAW_KIND_OIDC_SECRET") or read_runtime_secret(namespace, "ONGRID_OIDC_SECRET_KEY") or secrets.token_urlsafe(32)
     seed_password = os.environ.get("NETWORKCLAW_KIND_SEED_ADMIN_PASSWORD") or "admin"
-    for key in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL", "OPENAI_MODELS", "NETWORKCLAW_HARNESS_ALLOWED_MODELS"):
-        if not provider_env.get(key):
-            provider_env[key] = read_runtime_secret(namespace, key)
-    if not provider_env.get("NETWORKCLAW_HARNESS_ALLOWED_MODELS"):
-        provider_env["NETWORKCLAW_HARNESS_ALLOWED_MODELS"] = provider_env.get("OPENAI_MODELS") or provider_env.get("OPENAI_MODEL", "")
     credentials = {
         "NETWORKCLAW_SMOKE_EMAIL": args.seed_admin_email,
         "NETWORKCLAW_SMOKE_PASSWORD": seed_password,
@@ -424,16 +417,19 @@ stringData:
   ONGRID_JWT_SECRET: {quote(jwt_secret)}
   ONGRID_OIDC_SECRET_KEY: {quote(oidc_secret)}
   ONGRID_SEED_ADMIN_PASSWORD: {quote(seed_password)}
-  OPENAI_API_KEY: {quote(provider_env.get("OPENAI_API_KEY", ""))}
-  OPENAI_BASE_URL: {quote(provider_env.get("OPENAI_BASE_URL", ""))}
-  OPENAI_MODEL: {quote(provider_env.get("OPENAI_MODEL", ""))}
-  OPENAI_MODELS: {quote(provider_env.get("OPENAI_MODELS", ""))}
-  NETWORKCLAW_HARNESS_ALLOWED_MODELS: {quote(provider_env.get("NETWORKCLAW_HARNESS_ALLOWED_MODELS", ""))}
 """
     run(["kubectl", "--context", args.context, "apply", "-f", "-"], input_text=secret_manifest)
     apply_dependencies(namespace, args.postgres_image, args.redis_image, args.etcd_image)
     apply_migrations(namespace, migration_dir, args.postgres_image)
-    apply_model_catalog_seed(namespace, args.postgres_image, provider_env)
+    lobby_service = f"{args.release}-networkclaw-bundle-lobby"
+    with tempfile.TemporaryDirectory(prefix="networkclaw-kind-model-") as directory:
+        transport = snapshot_secrets(Path(directory), (lobby_service, f"{lobby_service}.{namespace}",
+                                                      f"{lobby_service}.{namespace}.svc", f"{lobby_service}.{namespace}.svc.cluster.local"))
+        secret = {"apiVersion": "v1", "kind": "Secret", "type": "Opaque",
+                  "metadata": {"name": "networkclaw-model-snapshot", "namespace": namespace},
+                  "data": {name: base64.b64encode((transport / name).read_bytes()).decode()
+                           for name in ("token", "ca.pem", "cert.pem", "key.pem")}}
+        run(["kubectl", "--context", args.context, "apply", "-f", "-"], input_text=json.dumps(secret))
     helm = [
         "helm", "upgrade", "--install", args.release, str(ROOT / "deploy/helm/networkclaw-bundle"),
         "--kube-context", args.context, "--namespace", namespace,
@@ -446,11 +442,15 @@ stringData:
         "--set-string", "auth.seedAdminPasswordSecretKey=ONGRID_SEED_ADMIN_PASSWORD",
         "--set", "ingress.enabled=true", "--set-string", "ingress.host=networkclaw.localhost",
         "--set-string", "auth.webOrigins=http://networkclaw.localhost:8081",
-        "--wait", "--timeout", "180s",
+        "--timeout", "180s",
     ]
     run(helm)
     run(["kubectl", "--context", args.context, "-n", namespace, "rollout", "status", f"deployment/{args.release}-networkclaw-bundle-lobby", "--timeout=180s"])
-    run(["kubectl", "--context", args.context, "-n", namespace, "rollout", "status", f"deployment/{args.release}-networkclaw-bundle-chatrtmgr", "--timeout=180s"])
+    provider_env.update(ONGRID_SEED_ADMIN_EMAIL=args.seed_admin_email, ONGRID_SEED_ADMIN_PASSWORD=seed_password)
+    if bootstrap_kind_models(args, provider_env):
+        run(["kubectl", "--context", args.context, "-n", namespace, "rollout", "status", f"deployment/{args.release}-networkclaw-bundle-chatrtmgr", "--timeout=180s"])
+    else:
+        print("model execution readiness pending administrator configuration")
     run(["kubectl", "--context", args.context, "-n", namespace, "rollout", "status", f"deployment/{args.release}-networkclaw-bundle-web2", "--timeout=180s"])
     write_credentials(credentials_path, credentials)
     lobby_service = f"{args.release}-networkclaw-bundle-lobby"

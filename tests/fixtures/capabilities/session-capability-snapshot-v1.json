@@ -1,0 +1,108 @@
+{
+  "contract_version": "capability.v1",
+  "catalog": {
+    "version": "hermes-2026.09",
+    "source": "composite",
+    "status": "published"
+  },
+  "agent": {
+    "agent_id": "incident-investigator",
+    "revision": 4,
+    "revision_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "requested_toolsets": [
+      "coding",
+      "networkclaw"
+    ],
+    "allowed_tools": [
+      "read_file",
+      "search_files",
+      "networkclaw_workspace_read"
+    ],
+    "denied_tools": [
+      "terminal"
+    ]
+  },
+  "tools": [
+    {
+      "name": "networkclaw_workspace_read",
+      "revision": 1,
+      "version": "1.0.0",
+      "schema_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source": "networkclaw",
+      "availability": "available",
+      "status": "active"
+    },
+    {
+      "name": "read_file",
+      "revision": 3,
+      "version": "1.2.0",
+      "schema_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source": "hermes",
+      "availability": "available",
+      "status": "active"
+    },
+    {
+      "name": "search_files",
+      "revision": 3,
+      "version": "1.2.0",
+      "schema_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "source": "hermes",
+      "availability": "available",
+      "status": "active"
+    }
+  ],
+  "skills": [
+    {
+      "skill_id": "systematic-debugging",
+      "version": "1.0.0",
+      "content_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "metadata_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "manifest_hash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "source": "builtin",
+      "release_ref": "builtin:systematic-debugging@1.0.0",
+      "release_status": "available",
+      "trust_state": "trusted",
+      "platforms": [],
+      "session_platforms": [],
+      "required_toolsets": [
+        "coding"
+      ],
+      "required_tools": [
+        "read_file",
+        "search_files"
+      ],
+      "fallback_for_toolsets": [],
+      "fallback_for_tools": [],
+      "config_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "support_files": []
+    }
+  ],
+  "snapshot": {
+    "session_id": "session-123",
+    "catalog_version": "hermes-2026.09",
+    "agent_revision": 4,
+    "toolset_revisions": {
+      "coding": 1,
+      "networkclaw": 1
+    },
+    "allowed_tools": [
+      "networkclaw_workspace_read",
+      "read_file",
+      "search_files"
+    ],
+    "skills": [
+      {
+        "skill_id": "systematic-debugging",
+        "version": "1.0.0",
+        "content_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "mode": "auto_load",
+      "resolved_dependencies": {"toolsets": ["coding"], "tools": ["read_file"]}
+      }
+    ],
+    "snapshot_hash": "sha256:6752dc7864f4ee7ca2e2326fcdffb683cd69103c1573173b787bc1a5077e6054"
+  }
+}

@@ -1,0 +1,354 @@
+{
+  "type": "object",
+  "required": [
+    "contract_version",
+    "session_id",
+    "release",
+    "policy",
+    "requested_toolsets",
+    "tools",
+    "skills",
+    "snapshot_hash"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "session-execution.v1"
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+    },
+    "release": {
+      "type": "object",
+      "required": [
+        "release_id",
+        "release_hash",
+        "catalog_version"
+      ],
+      "properties": {
+        "release_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+        },
+        "release_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "catalog_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "required": [
+        "system_prompt",
+        "permission_mode",
+        "turn_budget",
+        "delegation_policy"
+      ],
+      "properties": {
+        "system_prompt": {
+          "type": "string",
+          "maxLength": 65536
+        },
+        "permission_mode": {
+          "enum": [
+            "read_only",
+            "approval",
+            "trusted",
+            "allowlist",
+            "denylist",
+            "mixed"
+          ]
+        },
+        "turn_budget": {
+          "type": "object",
+          "required": [
+            "max_steps",
+            "max_retries",
+            "max_actions",
+            "timeout_seconds"
+          ],
+          "properties": {
+            "max_steps": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "max_retries": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "max_actions": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "timeout_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            }
+          },
+          "additionalProperties": false
+        },
+        "delegation_policy": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "max_depth",
+            "max_concurrent_children",
+            "child_budget"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "max_depth": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "max_concurrent_children": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 64
+            },
+            "child_budget": {
+              "type": "object",
+              "required": [
+                "max_iterations",
+                "timeout_seconds",
+                "max_output_bytes"
+              ],
+              "properties": {
+                "max_iterations": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                },
+                "timeout_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                },
+                "max_output_bytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "requested_toolsets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "revision"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        },
+        "additionalProperties": false
+      },
+      "maxItems": 256,
+      "uniqueItems": true
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "revision",
+          "version",
+          "schema_hash",
+          "source"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "schema_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "additionalProperties": false
+      },
+      "maxItems": 256,
+      "uniqueItems": true
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "skill_id",
+          "revision",
+          "version",
+          "content_hash",
+          "metadata_hash",
+          "manifest_hash",
+          "release_ref",
+          "mode",
+          "config_hash",
+          "resolved_dependencies"
+        ],
+        "properties": {
+          "skill_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "metadata_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "release_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "mode": {
+            "enum": [
+              "available",
+              "auto_load",
+              "disabled",
+              "explicit"
+            ]
+          },
+          "config_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "resolved_dependencies": {
+            "type": "object",
+            "required": [
+              "toolsets",
+              "tools"
+            ],
+            "properties": {
+              "toolsets": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+                },
+                "maxItems": 256,
+                "uniqueItems": true
+              },
+              "tools": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+                },
+                "maxItems": 256,
+                "uniqueItems": true
+              }
+            },
+            "additionalProperties": false
+          },
+          "optional": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "maxItems": 256,
+      "uniqueItems": true
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "profile_source": {
+      "type": "object",
+      "required": [
+        "profile_id",
+        "revision",
+        "revision_hash"
+      ],
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "revision_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "default_model_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  },
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://networkclaw.local/schemas/session-execution-v1.schema.json",
+  "title": "Frozen Session execution policy and immutable asset references v1"
+}

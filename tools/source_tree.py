@@ -18,6 +18,18 @@ SKIP_DIRS = {
 SKIP_FILES = {".DS_Store"}
 SKIP_PATHS = {
     "sources.lock.yaml",
+    "docs/evidence/capability-discovery-v1.json",
+    "docs/evidence/capability-release-v1.json",
+    "docs/evidence/capability-release-v1.json.audit.json",
+    "docs/evidence/capability-release-check-v1.json",
+    "docs/evidence/capability-release-diff-v1.json",
+    "docs/evidence/capability-release-diff-v1.json.audit.json",
+    "docs/evidence/capability-release-export-v1.json",
+    "docs/evidence/capability-release-diff-review.md",
+    "docs/evidence/capability-release-vendor-gate-v1.json",
+    "docs/evidence/capability-session-migration-v1.json",
+    "docs/evidence/capability-bundle-isolated-v1.json",
+    "docs/evidence/capability-release-acceptance.json",
     ".claude/ecc/install-state.json",
     ".codebuddy/ecc-install-state.json",
     ".codebuddy/hooks/hooks.json",
@@ -32,6 +44,7 @@ def is_included_path(name: str) -> bool:
         any(part in SKIP_DIRS for part in rel.parts)
         or name in SKIP_FILES
         or name in SKIP_PATHS
+        or name.startswith("release/")  # generated capability bundle payload
         or name.endswith(SKIP_SUFFIXES)
         or SECRET_NAME.search(name)
     )

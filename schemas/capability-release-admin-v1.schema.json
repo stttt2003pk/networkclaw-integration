@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://networkclaw.local/schemas/capability-release-admin-v1.schema.json",
+  "title": "Capability release admin request v1",
+  "oneOf": [{"$ref": "#/$defs/importRequest"}, {"$ref": "#/$defs/transitionRequest"}],
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "releaseID": {"type": "string", "pattern": "^cap-[a-z0-9][a-z0-9._:-]{0,127}$"},
+    "jobID": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"},
+    "importRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["operation", "job_id", "manifest"],
+      "properties": {"operation": {"const": "import"}, "job_id": {"$ref": "#/$defs/jobID"}, "manifest": {"type": "object"}}
+    },
+    "transitionRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["operation", "job_id", "release_id", "release_hash", "expected_published_hash"],
+      "properties": {
+        "operation": {"enum": ["publish", "rollback"]}, "job_id": {"$ref": "#/$defs/jobID"},
+        "release_id": {"$ref": "#/$defs/releaseID"}, "release_hash": {"$ref": "#/$defs/hash"},
+        "expected_published_hash": {"anyOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]}
+      }
+    },
+    "reason": {"enum": ["unauthorized", "forbidden", "request_invalid", "release_schema_invalid", "release_hash_invalid", "release_hash_conflict", "duplicate_revision", "stale_revision", "dependency_unavailable", "agent_reference_invalid", "catalog_conflict", "invalid_release_state", "release_not_found", "published_release_conflict", "release_store_unavailable", "import_transaction_failed", "publish_transaction_failed", "rollback_transaction_failed"]},
+    "receipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "operation", "release_id", "manifest_hash", "catalog_version", "release_status", "result", "reason_code", "idempotent", "previous_published_hash", "audit"],
+      "properties": {
+        "schema_version": {"const": "capability-release-admin.v1"}, "operation": {"enum": ["import", "publish", "rollback"]},
+        "release_id": {"anyOf": [{"$ref": "#/$defs/releaseID"}, {"type": "null"}]},
+        "manifest_hash": {"anyOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]},
+        "catalog_version": {"type": ["string", "null"]}, "release_status": {"enum": ["draft", "published", "retired", null]},
+        "result": {"enum": ["draft_created", "existing", "published", "rolled_back", "rejected", "failed"]},
+        "reason_code": {"anyOf": [{"$ref": "#/$defs/reason"}, {"type": "null"}]}, "idempotent": {"type": "boolean"},
+        "previous_published_hash": {"anyOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]},
+        "audit": {
+          "type": "object", "additionalProperties": false, "required": ["operator", "job_id", "source_tree_hashes"],
+          "properties": {
+            "operator": {"type": ["string", "null"]}, "job_id": {"anyOf": [{"$ref": "#/$defs/jobID"}, {"type": "null"}]},
+            "source_tree_hashes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/hash"}}
+          }
+        }
+      }
+    },
+    "response": {
+      "type": "object", "additionalProperties": false, "required": ["code", "message", "data"],
+      "properties": {
+        "code": {"enum": ["SUCCESS", "INVALID_REQUEST", "PERMISSION_DENIED", "RELEASE_CONFLICT", "RELEASE_NOT_FOUND", "RELEASE_UNAVAILABLE", "INTERNAL_ERROR"]},
+        "message": {"type": "string"}, "data": {"$ref": "#/$defs/receipt"}
+      }
+    }
+  }
+}

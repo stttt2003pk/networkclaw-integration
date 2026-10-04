@@ -55,10 +55,16 @@ class DeploymentInputTests(unittest.TestCase):
         self.assertNotIn("POSTGRES_PASSWORD: ", rendered)
         self.assertNotIn("OPENAI_API_KEY: ", rendered)
 
-    def test_provider_model_settings_are_secret_references(self) -> None:
-        for name in ("OPENAI_BASE_URL", "OPENAI_MODEL", "OPENAI_MODELS", "NETWORKCLAW_HARNESS_ALLOWED_MODELS"):
-            self.assertIn(f"key: {name}", self.rendered)
-        self.assertNotIn("gpt-5.6-sol", self.rendered)
+    def test_model_snapshot_settings_are_secret_references(self) -> None:
+        self.assertIn("name: CHATRTMGR_LOBBY_URL", self.rendered)
+        self.assertIn("name: CHATRTMGR_MODEL_CONFIG_TOKEN_FILE", self.rendered)
+        self.assertIn("name: CHATRTMGR_MODEL_CONFIG_CA_FILE", self.rendered)
+        self.assertIn("name: ONGRID_MODEL_CONFIG_TLS_ADDR", self.rendered)
+        self.assertIn("name: ONGRID_MODEL_CONFIG_CERT_FILE", self.rendered)
+        self.assertIn("name: ONGRID_MODEL_CONFIG_KEY_FILE", self.rendered)
+        self.assertIn("secretName: \"networkclaw-model-snapshot\"", self.rendered)
+        self.assertNotIn("OPENAI_API_KEY", self.rendered)
+        self.assertNotIn("OPENAI_MODELS", self.rendered)
 
     def test_pod_ip_is_defined_before_reference(self) -> None:
         chatrtmgr = self.rendered.split("kind: Deployment\nmetadata:\n  name: networkclaw-networkclaw-bundle-chatrtmgr\n", 1)[1].split("kind: Deployment", 1)[0]
@@ -109,9 +115,13 @@ class DeploymentInputTests(unittest.TestCase):
         self.assertIn("ON_ERROR_STOP=1", " ".join(config["services"]["migrate"]["entrypoint"]))
         self.assertEqual(config["services"]["migrate"]["volumes"][0]["target"], "/migrations")
         self.assertIn("networkclaw_compose_migrations", " ".join(config["services"]["migrate"]["entrypoint"]))
-        self.assertIn("OPENAI_MODELS", config["services"]["migrate"]["environment"])
-        for name in ("OPENAI_MODEL", "OPENAI_MODELS", "NETWORKCLAW_HARNESS_ALLOWED_MODELS"):
+        self.assertNotIn("OPENAI_MODELS", config["services"]["migrate"]["environment"])
+        for name in ("CHATRTMGR_LOBBY_URL", "CHATRTMGR_MODEL_CONFIG_TOKEN_FILE", "CHATRTMGR_MODEL_CONFIG_CA_FILE"):
             self.assertIn(name, config["services"]["chatrtmgr"]["environment"])
+        self.assertEqual(config["services"]["chatrtmgr"]["environment"]["CHATRTMGR_LOBBY_URL"], "https://lobby:8443")
+        secret_sources = {item["source"] for item in config["services"]["chatrtmgr"]["secrets"]}
+        self.assertIn("model-token", secret_sources)
+        self.assertIn("model-ca", secret_sources)
 
     def test_compose_wrappers_have_up_down_entries(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
@@ -160,7 +170,7 @@ class DeploymentInputTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("matching --cluster", result.stderr)
 
-    def test_kind_provider_file_and_catalog_seed(self) -> None:
+    def test_kind_provider_file_is_bootstrap_input_only(self) -> None:
         tool = runpy.run_path(str(ROOT / "tools/kind-up.py"))
         with tempfile.TemporaryDirectory() as directory:
             env_file = Path(directory) / ".env.kind"
@@ -170,14 +180,9 @@ class DeploymentInputTests(unittest.TestCase):
             )
             values = tool["read_env_file"](env_file)
         self.assertEqual(values["OPENAI_MODEL"], "gpt-5.6-sol")
-        calls = []
-        with patch.dict(tool["apply_model_catalog_seed"].__globals__, {"run": lambda command, **kwargs: calls.append((command, kwargs))}):
-            tool["apply_model_catalog_seed"]("test", "postgres:16-alpine", values)
-        sql = next(arg for command, _ in calls for arg in command if arg.startswith("--from-literal=catalog.sql="))
-        self.assertIn("gpt-5.6-sol", sql)
-        self.assertIn("deployed = false", sql)
-        self.assertNotIn("test-only-key", sql)
-        self.assertNotIn("example.test", sql)
+        self.assertEqual(values["OPENAI_BASE_URL"], "https://example.test/v1")
+        self.assertEqual(values["OPENAI_API_KEY"], "test-only-key")
+        self.assertNotIn("apply_model_catalog_seed", tool)
 
 
 if __name__ == "__main__":

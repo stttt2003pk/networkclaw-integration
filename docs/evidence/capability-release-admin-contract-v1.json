@@ -1,0 +1,34 @@
+{
+  "schema_version": "capability-release-admin-contract-acceptance.v1",
+  "task": "R-07",
+  "status": "passed",
+  "contract": "docs/contracts/capability-release-admin-v1.md",
+  "networkclaw_contract_schema": "../NetworkClaw/api/lobby/v1/capability-release-admin-v1.schema.json",
+  "integration_schema": "schemas/capability-release-admin-v1.schema.json",
+  "endpoint": "POST /api/v1/admin/capability-releases/actions",
+  "operations": ["import", "publish", "rollback"],
+  "authorization": "verified JWT access token with admin role",
+  "pre_write_rejection": ["unauthorized", "forbidden", "request_invalid", "release_schema_invalid", "release_hash_invalid", "duplicate_revision", "stale_revision", "dependency_unavailable", "agent_reference_invalid", "catalog_conflict", "invalid_release_state"],
+  "idempotency": {
+    "same_release_hash": "existing with idempotent=true",
+    "identity_different_content": "release_hash_conflict",
+    "publish_rollback_compare_and_swap": "published_release_conflict"
+  },
+  "acceptance_report": "tests/fixtures/capability-release/admin-contract-v1.json",
+  "acceptance_cases": 28,
+  "compiled_manifest_accepted": true,
+  "python_client_round_trip": true,
+  "rejected_case_write_delta": 0,
+  "tests": {
+    "networkclaw": "go test -race ./...",
+    "integration": "make test",
+    "integration_python_tests": 109,
+    "integration_go_race": "passed"
+  },
+  "scope": {
+    "networkclaw": "contract, admin handler, pre-write validation, in-memory acceptance adapter",
+    "integration": "schema mirror, explicit admin client, fixture and contract tests",
+    "r08_deferred": "database transaction, durable audit, catalog/revision persistence"
+  },
+  "next_task": "R-08"
+}

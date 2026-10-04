@@ -31,6 +31,7 @@
     },
     "protocol": {"type": "object", "additionalProperties": false, "required": ["version"], "properties": {"version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"}}},
     "target": {"type": "object", "additionalProperties": false, "required": ["os", "version", "architecture"], "properties": {"os": {"type": "string"}, "version": {"type": "string"}, "architecture": {"type": "string"}}},
+    "capability_release": {"type": "object", "additionalProperties": false, "required": ["manifest_hash", "files"], "properties": {"manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "files": {"type": "array", "items": {"type": "string", "pattern": "^integration/release/"}, "minItems": 1}}},
     "artifacts": {"type": "object", "additionalProperties": false, "required": ["files"], "properties": {"files": {"type": "object", "propertyNames": {"pattern": "^(networkclaw|networkclaw-harness|integration)/"}, "additionalProperties": {"$ref": "#/$defs/hash"}}}}
   },
   "$defs": {
@@ -39,7 +40,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["path", "commit", "tree_sha256", "dirty", "diff_sha256", "customized", "vendor_tree_sha256"],
       "properties": {
-        "path": {"enum": ["networkclaw", "harness", "integration"]},
+        "path": {"enum": ["networkclaw", "networkclaw-harness", "integration"]},
         "repository": {"type": "string"},
         "commit": {"type": ["string", "null"]},
         "tree_sha256": {"$ref": "#/$defs/hash"},

@@ -1,0 +1,1068 @@
+{
+  "binding_changes": [],
+  "candidate": {
+    "release_hash": "sha256:691dbf676929453e751e2e747baf99d440ae3e62fd1a43df65b76b68869f3157",
+    "release_id": "cap-2026.09.30-001"
+  },
+  "changes": {
+    "agents": {
+      "added": [
+        {
+          "name": "ops",
+          "revision": 1
+        }
+      ],
+      "changed": [],
+      "removed": [
+        {
+          "name": "default",
+          "revision": 1
+        }
+      ]
+    },
+    "skills": {
+      "added": [
+        {
+          "name": "airtable",
+          "revision": 1
+        },
+        {
+          "name": "apple-notes",
+          "revision": 1
+        },
+        {
+          "name": "apple-reminders",
+          "revision": 1
+        },
+        {
+          "name": "architecture-diagram",
+          "revision": 1
+        },
+        {
+          "name": "arxiv",
+          "revision": 1
+        },
+        {
+          "name": "ascii-video",
+          "revision": 1
+        },
+        {
+          "name": "baoyu-infographic",
+          "revision": 1
+        },
+        {
+          "name": "blocked-page-recovery",
+          "revision": 1
+        },
+        {
+          "name": "box",
+          "revision": 1
+        },
+        {
+          "name": "claude-code",
+          "revision": 1
+        },
+        {
+          "name": "claude-design",
+          "revision": 1
+        },
+        {
+          "name": "codebase-inspection",
+          "revision": 1
+        },
+        {
+          "name": "codex",
+          "revision": 1
+        },
+        {
+          "name": "competitor-news-monitor",
+          "revision": 1
+        },
+        {
+          "name": "computer-use",
+          "revision": 1
+        },
+        {
+          "name": "design-md",
+          "revision": 1
+        },
+        {
+          "name": "document-to-action-items",
+          "revision": 1
+        },
+        {
+          "name": "docx",
+          "revision": 1
+        },
+        {
+          "name": "dogfood",
+          "revision": 1
+        },
+        {
+          "name": "email-inbox-triage",
+          "revision": 1
+        },
+        {
+          "name": "findmy",
+          "revision": 1
+        },
+        {
+          "name": "gif-search",
+          "revision": 1
+        },
+        {
+          "name": "github",
+          "revision": 1
+        },
+        {
+          "name": "google-workspace",
+          "revision": 1
+        },
+        {
+          "name": "grounded-citations",
+          "revision": 1
+        },
+        {
+          "name": "hermes-agent",
+          "revision": 1
+        },
+        {
+          "name": "hermes-agent-skill-authoring",
+          "revision": 1
+        },
+        {
+          "name": "himalaya",
+          "revision": 1
+        },
+        {
+          "name": "humanizer",
+          "revision": 1
+        },
+        {
+          "name": "imessage",
+          "revision": 1
+        },
+        {
+          "name": "inspecting-hermes-desktop-dom",
+          "revision": 1
+        },
+        {
+          "name": "llm-wiki",
+          "revision": 1
+        },
+        {
+          "name": "manim-video",
+          "revision": 1
+        },
+        {
+          "name": "maps",
+          "revision": 1
+        },
+        {
+          "name": "meeting-action-items",
+          "revision": 1
+        },
+        {
+          "name": "node-inspect-debugger",
+          "revision": 1
+        },
+        {
+          "name": "notion",
+          "revision": 1
+        },
+        {
+          "name": "obsidian",
+          "revision": 1
+        },
+        {
+          "name": "opencode",
+          "revision": 1
+        },
+        {
+          "name": "p5js",
+          "revision": 1
+        },
+        {
+          "name": "pdf",
+          "revision": 1
+        },
+        {
+          "name": "popular-web-designs",
+          "revision": 1
+        },
+        {
+          "name": "powerpoint",
+          "revision": 1
+        },
+        {
+          "name": "product-price-monitor",
+          "revision": 1
+        },
+        {
+          "name": "python-debugpy",
+          "revision": 1
+        },
+        {
+          "name": "requesting-code-review",
+          "revision": 1
+        },
+        {
+          "name": "sdlc-review",
+          "revision": 1
+        },
+        {
+          "name": "simplify-code",
+          "revision": 1
+        },
+        {
+          "name": "songsee",
+          "revision": 1
+        },
+        {
+          "name": "songwriting-and-ai-music",
+          "revision": 1
+        },
+        {
+          "name": "spike",
+          "revision": 1
+        },
+        {
+          "name": "systematic-debugging",
+          "revision": 1
+        },
+        {
+          "name": "teams-meeting-pipeline",
+          "revision": 1
+        },
+        {
+          "name": "test-driven-development",
+          "revision": 1
+        },
+        {
+          "name": "weekly-review-planning",
+          "revision": 1
+        },
+        {
+          "name": "workspace-inspection",
+          "revision": 1
+        },
+        {
+          "name": "xlsx",
+          "revision": 1
+        },
+        {
+          "name": "xurl",
+          "revision": 1
+        },
+        {
+          "name": "youtube-content",
+          "revision": 1
+        }
+      ],
+      "changed": [],
+      "removed": [
+        {
+          "name": "workspace-guide",
+          "revision": 1
+        }
+      ]
+    },
+    "tools": {
+      "added": [
+        {
+          "name": "a2a_call",
+          "revision": 1
+        },
+        {
+          "name": "a2a_discover",
+          "revision": 1
+        },
+        {
+          "name": "a2a_history",
+          "revision": 1
+        },
+        {
+          "name": "a2a_list",
+          "revision": 1
+        },
+        {
+          "name": "a2a_orchestrate",
+          "revision": 1
+        },
+        {
+          "name": "annotate_preview",
+          "revision": 1
+        },
+        {
+          "name": "apply_layout",
+          "revision": 1
+        },
+        {
+          "name": "browser_back",
+          "revision": 1
+        },
+        {
+          "name": "browser_cdp",
+          "revision": 1
+        },
+        {
+          "name": "browser_click",
+          "revision": 1
+        },
+        {
+          "name": "browser_console",
+          "revision": 1
+        },
+        {
+          "name": "browser_dialog",
+          "revision": 1
+        },
+        {
+          "name": "browser_exec",
+          "revision": 1
+        },
+        {
+          "name": "browser_get_images",
+          "revision": 1
+        },
+        {
+          "name": "browser_navigate",
+          "revision": 1
+        },
+        {
+          "name": "browser_press",
+          "revision": 1
+        },
+        {
+          "name": "browser_scroll",
+          "revision": 1
+        },
+        {
+          "name": "browser_snapshot",
+          "revision": 1
+        },
+        {
+          "name": "browser_type",
+          "revision": 1
+        },
+        {
+          "name": "browser_vault_enter_code",
+          "revision": 1
+        },
+        {
+          "name": "browser_vault_fill",
+          "revision": 1
+        },
+        {
+          "name": "browser_vault_list",
+          "revision": 1
+        },
+        {
+          "name": "browser_vault_save_login",
+          "revision": 1
+        },
+        {
+          "name": "browser_vault_unlock",
+          "revision": 1
+        },
+        {
+          "name": "browser_vision",
+          "revision": 1
+        },
+        {
+          "name": "clarify",
+          "revision": 1
+        },
+        {
+          "name": "close_terminal",
+          "revision": 1
+        },
+        {
+          "name": "computer_use",
+          "revision": 1
+        },
+        {
+          "name": "cronjob_manage",
+          "revision": 1
+        },
+        {
+          "name": "delegate_task",
+          "revision": 1
+        },
+        {
+          "name": "desktop_preview",
+          "revision": 1
+        },
+        {
+          "name": "desktop_project",
+          "revision": 1
+        },
+        {
+          "name": "discord",
+          "revision": 1
+        },
+        {
+          "name": "discord_admin",
+          "revision": 1
+        },
+        {
+          "name": "drive_preview",
+          "revision": 1
+        },
+        {
+          "name": "execute_code",
+          "revision": 1
+        },
+        {
+          "name": "feishu_doc_read",
+          "revision": 1
+        },
+        {
+          "name": "feishu_drive_add_comment",
+          "revision": 1
+        },
+        {
+          "name": "feishu_drive_list_comment_replies",
+          "revision": 1
+        },
+        {
+          "name": "feishu_drive_list_comments",
+          "revision": 1
+        },
+        {
+          "name": "feishu_drive_reply_comment",
+          "revision": 1
+        },
+        {
+          "name": "focus_pane",
+          "revision": 1
+        },
+        {
+          "name": "gui_tour",
+          "revision": 1
+        },
+        {
+          "name": "ha_call_service",
+          "revision": 1
+        },
+        {
+          "name": "ha_get_state",
+          "revision": 1
+        },
+        {
+          "name": "ha_list_entities",
+          "revision": 1
+        },
+        {
+          "name": "ha_list_services",
+          "revision": 1
+        },
+        {
+          "name": "image_generate",
+          "revision": 1
+        },
+        {
+          "name": "kanban_attach",
+          "revision": 1
+        },
+        {
+          "name": "kanban_attach_url",
+          "revision": 1
+        },
+        {
+          "name": "kanban_attachments",
+          "revision": 1
+        },
+        {
+          "name": "kanban_block",
+          "revision": 1
+        },
+        {
+          "name": "kanban_comment",
+          "revision": 1
+        },
+        {
+          "name": "kanban_complete",
+          "revision": 1
+        },
+        {
+          "name": "kanban_create",
+          "revision": 1
+        },
+        {
+          "name": "kanban_heartbeat",
+          "revision": 1
+        },
+        {
+          "name": "kanban_link",
+          "revision": 1
+        },
+        {
+          "name": "kanban_list",
+          "revision": 1
+        },
+        {
+          "name": "kanban_request_changes",
+          "revision": 1
+        },
+        {
+          "name": "kanban_request_review",
+          "revision": 1
+        },
+        {
+          "name": "kanban_show",
+          "revision": 1
+        },
+        {
+          "name": "kanban_unblock",
+          "revision": 1
+        },
+        {
+          "name": "manage_connections",
+          "revision": 1
+        },
+        {
+          "name": "memory",
+          "revision": 1
+        },
+        {
+          "name": "networkclaw_workspace_read",
+          "revision": 1
+        },
+        {
+          "name": "patch",
+          "revision": 1
+        },
+        {
+          "name": "process_manage",
+          "revision": 1
+        },
+        {
+          "name": "react_to_message",
+          "revision": 1
+        },
+        {
+          "name": "read_terminal",
+          "revision": 1
+        },
+        {
+          "name": "read_window_below",
+          "revision": 1
+        },
+        {
+          "name": "search_files",
+          "revision": 1
+        },
+        {
+          "name": "session_search",
+          "revision": 1
+        },
+        {
+          "name": "show_tip",
+          "revision": 1
+        },
+        {
+          "name": "skill_manage",
+          "revision": 1
+        },
+        {
+          "name": "skill_view",
+          "revision": 1
+        },
+        {
+          "name": "skills_list",
+          "revision": 1
+        },
+        {
+          "name": "spotify_albums",
+          "revision": 1
+        },
+        {
+          "name": "spotify_devices",
+          "revision": 1
+        },
+        {
+          "name": "spotify_library",
+          "revision": 1
+        },
+        {
+          "name": "spotify_playback",
+          "revision": 1
+        },
+        {
+          "name": "spotify_playlists",
+          "revision": 1
+        },
+        {
+          "name": "spotify_queue",
+          "revision": 1
+        },
+        {
+          "name": "spotify_search",
+          "revision": 1
+        },
+        {
+          "name": "terminal",
+          "revision": 1
+        },
+        {
+          "name": "text_to_speech",
+          "revision": 1
+        },
+        {
+          "name": "todo_list",
+          "revision": 1
+        },
+        {
+          "name": "video_analyze",
+          "revision": 1
+        },
+        {
+          "name": "video_generate",
+          "revision": 1
+        },
+        {
+          "name": "vision_analyze",
+          "revision": 1
+        },
+        {
+          "name": "web_extract",
+          "revision": 1
+        },
+        {
+          "name": "web_search",
+          "revision": 1
+        },
+        {
+          "name": "write_file",
+          "revision": 1
+        },
+        {
+          "name": "x_search",
+          "revision": 1
+        },
+        {
+          "name": "xai_video_edit",
+          "revision": 1
+        },
+        {
+          "name": "xai_video_extend",
+          "revision": 1
+        },
+        {
+          "name": "yb_query_group_info",
+          "revision": 1
+        },
+        {
+          "name": "yb_query_group_members",
+          "revision": 1
+        },
+        {
+          "name": "yb_search_sticker",
+          "revision": 1
+        },
+        {
+          "name": "yb_send_dm",
+          "revision": 1
+        },
+        {
+          "name": "yb_send_sticker",
+          "revision": 1
+        }
+      ],
+      "changed": [
+        {
+          "after": {
+            "availability": "available",
+            "name": "read_file",
+            "revision": 1,
+            "schema_hash": "sha256:15f9af4079752cac1cb5ade909406c3e92a746ef0883befcb5d450b11be63b15",
+            "source": "tools.file_tools",
+            "status": "active",
+            "version": "hermes.tool-inventory.v1"
+          },
+          "before": {
+            "availability": "available",
+            "name": "read_file",
+            "revision": 1,
+            "schema_hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+            "source": "hermes.registry.read_file",
+            "status": "active",
+            "version": "1"
+          },
+          "identity": {
+            "name": "read_file",
+            "revision": 1
+          }
+        }
+      ],
+      "removed": []
+    },
+    "toolsets": {
+      "added": [
+        {
+          "name": "a2a",
+          "revision": 1
+        },
+        {
+          "name": "bot_room",
+          "revision": 1
+        },
+        {
+          "name": "browser",
+          "revision": 1
+        },
+        {
+          "name": "browser-cdp",
+          "revision": 1
+        },
+        {
+          "name": "browser-use",
+          "revision": 1
+        },
+        {
+          "name": "clarify",
+          "revision": 1
+        },
+        {
+          "name": "code_execution",
+          "revision": 1
+        },
+        {
+          "name": "coding",
+          "revision": 1
+        },
+        {
+          "name": "computer_use",
+          "revision": 1
+        },
+        {
+          "name": "connections",
+          "revision": 1
+        },
+        {
+          "name": "context_engine",
+          "revision": 1
+        },
+        {
+          "name": "cronjob",
+          "revision": 1
+        },
+        {
+          "name": "debugging",
+          "revision": 1
+        },
+        {
+          "name": "delegation",
+          "revision": 1
+        },
+        {
+          "name": "desktop_ui",
+          "revision": 1
+        },
+        {
+          "name": "discord",
+          "revision": 1
+        },
+        {
+          "name": "discord_admin",
+          "revision": 1
+        },
+        {
+          "name": "feishu_doc",
+          "revision": 1
+        },
+        {
+          "name": "feishu_drive",
+          "revision": 1
+        },
+        {
+          "name": "file",
+          "revision": 1
+        },
+        {
+          "name": "hermes-acp",
+          "revision": 1
+        },
+        {
+          "name": "hermes-api-server",
+          "revision": 1
+        },
+        {
+          "name": "hermes-bluebubbles",
+          "revision": 1
+        },
+        {
+          "name": "hermes-cli",
+          "revision": 1
+        },
+        {
+          "name": "hermes-cron",
+          "revision": 1
+        },
+        {
+          "name": "hermes-dingtalk",
+          "revision": 1
+        },
+        {
+          "name": "hermes-discord",
+          "revision": 1
+        },
+        {
+          "name": "hermes-email",
+          "revision": 1
+        },
+        {
+          "name": "hermes-feishu",
+          "revision": 1
+        },
+        {
+          "name": "hermes-gateway",
+          "revision": 1
+        },
+        {
+          "name": "hermes-homeassistant",
+          "revision": 1
+        },
+        {
+          "name": "hermes-matrix",
+          "revision": 1
+        },
+        {
+          "name": "hermes-mattermost",
+          "revision": 1
+        },
+        {
+          "name": "hermes-qqbot",
+          "revision": 1
+        },
+        {
+          "name": "hermes-signal",
+          "revision": 1
+        },
+        {
+          "name": "hermes-slack",
+          "revision": 1
+        },
+        {
+          "name": "hermes-sms",
+          "revision": 1
+        },
+        {
+          "name": "hermes-telegram",
+          "revision": 1
+        },
+        {
+          "name": "hermes-webhook",
+          "revision": 1
+        },
+        {
+          "name": "hermes-wecom",
+          "revision": 1
+        },
+        {
+          "name": "hermes-wecom-callback",
+          "revision": 1
+        },
+        {
+          "name": "hermes-weixin",
+          "revision": 1
+        },
+        {
+          "name": "hermes-whatsapp",
+          "revision": 1
+        },
+        {
+          "name": "hermes-yuanbao",
+          "revision": 1
+        },
+        {
+          "name": "homeassistant",
+          "revision": 1
+        },
+        {
+          "name": "image_gen",
+          "revision": 1
+        },
+        {
+          "name": "kanban",
+          "revision": 1
+        },
+        {
+          "name": "memory",
+          "revision": 1
+        },
+        {
+          "name": "networkclaw",
+          "revision": 1
+        },
+        {
+          "name": "project",
+          "revision": 1
+        },
+        {
+          "name": "safe",
+          "revision": 1
+        },
+        {
+          "name": "search",
+          "revision": 1
+        },
+        {
+          "name": "session_search",
+          "revision": 1
+        },
+        {
+          "name": "skills",
+          "revision": 1
+        },
+        {
+          "name": "spotify",
+          "revision": 1
+        },
+        {
+          "name": "terminal",
+          "revision": 1
+        },
+        {
+          "name": "todo",
+          "revision": 1
+        },
+        {
+          "name": "tts",
+          "revision": 1
+        },
+        {
+          "name": "video",
+          "revision": 1
+        },
+        {
+          "name": "video_gen",
+          "revision": 1
+        },
+        {
+          "name": "vision",
+          "revision": 1
+        },
+        {
+          "name": "web",
+          "revision": 1
+        },
+        {
+          "name": "x_search",
+          "revision": 1
+        },
+        {
+          "name": "yuanbao",
+          "revision": 1
+        }
+      ],
+      "changed": [],
+      "removed": [
+        {
+          "name": "workspace",
+          "revision": 1
+        }
+      ]
+    }
+  },
+  "dependency_changes": [],
+  "migration": {
+    "candidates": [
+      {
+        "candidate": null,
+        "kind": "toolset",
+        "old": {
+          "name": "workspace",
+          "revision": 1
+        },
+        "status": "retired"
+      },
+      {
+        "candidate": null,
+        "kind": "skill",
+        "old": {
+          "name": "workspace-guide",
+          "revision": 1
+        },
+        "status": "retired"
+      },
+      {
+        "candidate": null,
+        "kind": "agent",
+        "old": {
+          "name": "default",
+          "revision": 1
+        },
+        "status": "retired"
+      }
+    ],
+    "phases": [
+      {
+        "action": "inventory",
+        "id": "M0",
+        "status": "ready"
+      },
+      {
+        "action": "first_import",
+        "id": "M1",
+        "status": "ready"
+      },
+      {
+        "action": "new_session",
+        "id": "M2",
+        "status": "ready"
+      },
+      {
+        "action": "close_old_release",
+        "id": "M3",
+        "status": "review_required"
+      }
+    ],
+    "source": "published_release",
+    "unresolved": [
+      {
+        "candidate": null,
+        "kind": "toolset",
+        "old": {
+          "name": "workspace",
+          "revision": 1
+        },
+        "status": "retired"
+      },
+      {
+        "candidate": null,
+        "kind": "skill",
+        "old": {
+          "name": "workspace-guide",
+          "revision": 1
+        },
+        "status": "retired"
+      },
+      {
+        "candidate": null,
+        "kind": "agent",
+        "old": {
+          "name": "default",
+          "revision": 1
+        },
+        "status": "retired"
+      }
+    ]
+  },
+  "published": {
+    "release_hash": "sha256:00237653ec8f7656fb3a675fe7526f6fdf8b2738636a9ba523188e8525e2e612",
+    "release_id": "cap-fixture-001"
+  },
+  "schema_version": "capability-release-diff.v1",
+  "status": "passed",
+  "status_changes": [],
+  "summary": {
+    "added": 224,
+    "binding_changes": 0,
+    "changed": 1,
+    "dependency_changes": 0,
+    "removed": 3,
+    "unresolved_migrations": 3
+  }
+}

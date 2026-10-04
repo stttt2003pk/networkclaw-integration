@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://networkclaw.local/schemas/capability-release-v1.schema.json",
+  "title": "NetworkClaw capability release v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "release_id", "release_hash", "sources", "hermes", "protocol", "target", "catalog", "toolsets", "tools", "skills", "agents", "migration"],
+  "properties": {
+    "schema_version": {"const": "capability-release.v1"},
+    "release_id": {"type": "string", "pattern": "^cap-[a-z0-9][a-z0-9._:-]{0,127}$"},
+    "release_hash": {"$ref": "#/$defs/hash"},
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["networkclaw", "harness", "integration"],
+      "properties": {
+        "networkclaw": {"$ref": "#/$defs/source"},
+        "harness": {"$ref": "#/$defs/source"},
+        "integration": {"$ref": "#/$defs/source"}
+      }
+    },
+    "hermes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_ref", "source_repository", "vendor_manifest_hash", "vendor_tree_hash"],
+      "properties": {
+        "source_ref": {"type": "string", "minLength": 1},
+        "source_repository": {"type": "string", "minLength": 1},
+        "vendor_manifest_hash": {"$ref": "#/$defs/hash"},
+        "vendor_tree_hash": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host_protocol_version", "capability_schema_version"],
+      "properties": {
+        "host_protocol_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"},
+        "capability_schema_version": {"const": "capability.v1"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os", "version", "architecture", "session_platform"],
+      "properties": {
+        "os": {"type": "string", "enum": ["ubuntu", "macos"]},
+        "version": {"type": "string", "minLength": 1},
+        "architecture": {"type": "string", "enum": ["amd64", "arm64"]},
+        "session_platform": {"type": "string", "minLength": 1}
+      }
+    },
+    "catalog": {"$ref": "#/$defs/catalog"},
+    "toolsets": {"type": "array", "items": {"$ref": "#/$defs/toolset"}, "uniqueItems": true},
+    "tools": {"type": "array", "items": {"$ref": "#/$defs/tool"}, "uniqueItems": true},
+    "skills": {"type": "array", "items": {"$ref": "#/$defs/skill"}, "uniqueItems": true},
+    "agents": {"type": "array", "items": {"$ref": "#/$defs/agent"}, "uniqueItems": true},
+    "migration": {"$ref": "#/$defs/migration"}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "ref", "commit", "tree_hash", "dirty", "diff_hash"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "ref": {"type": "string", "minLength": 1},
+        "commit": {"type": ["string", "null"]},
+        "tree_hash": {"$ref": "#/$defs/hash"},
+        "dirty": {"type": "boolean"},
+        "diff_hash": {"anyOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]}
+      }
+    },
+    "revisionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "revision"],
+      "properties": {
+        "name": {"$ref": "#/$defs/id"},
+        "revision": {"type": "integer", "minimum": 1}
+      }
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "status", "source"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "enum": ["draft", "published", "retired"]},
+        "source": {"type": "string", "enum": ["hermes", "networkclaw", "composite"]}
+      }
+    },
+    "toolset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "revision", "version", "member_tool_revisions", "source", "status"],
+      "properties": {
+        "name": {"$ref": "#/$defs/id"},
+        "revision": {"type": "integer", "minimum": 1},
+        "version": {"type": "string", "minLength": 1},
+        "member_tool_revisions": {"type": "array", "items": {"$ref": "#/$defs/revisionRef"}, "uniqueItems": true},
+        "source": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "enum": ["active", "retired"]}
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "revision", "version", "schema_hash", "source", "availability", "status"],
+      "properties": {
+        "name": {"$ref": "#/$defs/id"},
+        "revision": {"type": "integer", "minimum": 1},
+        "version": {"type": "string", "minLength": 1},
+        "schema_hash": {"$ref": "#/$defs/hash"},
+        "source": {"type": "string", "minLength": 1},
+        "availability": {"type": "string", "enum": ["registered", "available", "unavailable"]},
+        "status": {"type": "string", "enum": ["active", "retired"]}
+      }
+    },
+    "supportFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skill_id", "revision", "version", "content_hash", "metadata_hash", "manifest_hash", "source", "release_ref", "release_status", "trust_state", "required_toolsets", "required_tools", "support_files"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/id"},
+        "revision": {"type": "integer", "minimum": 1},
+        "version": {"type": "string", "minLength": 1},
+        "content_hash": {"$ref": "#/$defs/hash"},
+        "metadata_hash": {"$ref": "#/$defs/hash"},
+        "manifest_hash": {"$ref": "#/$defs/hash"},
+        "source": {"type": "string", "minLength": 1},
+        "release_ref": {"type": "string", "minLength": 1},
+        "release_status": {"type": "string", "enum": ["available", "unavailable", "revoked"]},
+        "trust_state": {"type": "string", "enum": ["trusted", "quarantined", "unknown"]},
+        "required_toolsets": {"type": "array", "items": {"$ref": "#/$defs/revisionRef"}, "uniqueItems": true},
+        "required_tools": {"type": "array", "items": {"$ref": "#/$defs/revisionRef"}, "uniqueItems": true},
+        "support_files": {"type": "array", "items": {"$ref": "#/$defs/supportFile"}}
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent_id", "revision", "revision_hash", "catalog_version", "requested_toolsets", "allowed_tool_revisions", "denied_tools", "skill_revisions"],
+      "properties": {
+        "agent_id": {"$ref": "#/$defs/id"},
+        "revision": {"type": "integer", "minimum": 1},
+        "revision_hash": {"$ref": "#/$defs/hash"},
+        "catalog_version": {"type": "string", "minLength": 1},
+        "requested_toolsets": {"type": "array", "items": {"$ref": "#/$defs/revisionRef"}, "uniqueItems": true},
+        "allowed_tool_revisions": {"type": "array", "items": {"$ref": "#/$defs/revisionRef"}, "uniqueItems": true},
+        "denied_tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "skill_revisions": {"type": "array", "items": {"$ref": "#/$defs/revisionRef"}, "uniqueItems": true}
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "legacy_inputs", "unresolved"],
+      "properties": {
+        "source": {"type": "string", "enum": ["none", "legacy_catalog"]},
+        "legacy_inputs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "unresolved": {"type": "array", "items": {"$ref": "#/$defs/unresolved"}, "uniqueItems": true}
+      }
+    },
+    "unresolved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name", "reason"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["tool", "toolset", "skill", "agent"]},
+        "name": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "enum": ["unknown_tool", "unknown_toolset", "unknown_skill", "dependency_unavailable", "stale_revision", "retired"]}
+      }
+    }
+  }
+}

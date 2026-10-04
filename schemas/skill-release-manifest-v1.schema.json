@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://networkclaw.local/schemas/skill-release-manifest-v1.schema.json",
+  "title": "Hermes Skill release manifest v1",
+  "type": "object",
+  "required": ["manifest_version", "skills"],
+  "properties": {
+    "manifest_version": {"const": "skill-release.v1"},
+    "skills": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/skill"},
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"},
+    "supportFile": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "skill": {
+      "type": "object",
+      "required": ["skill_id", "version", "content_hash", "metadata_hash", "manifest_hash", "source", "release_ref", "release_status", "trust_state", "platforms", "session_platforms", "required_toolsets", "required_tools", "fallback_for_toolsets", "fallback_for_tools", "config_schema", "support_files"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/id"},
+        "version": {"type": "string", "minLength": 1},
+        "content_hash": {"$ref": "#/$defs/hash"},
+        "metadata_hash": {"$ref": "#/$defs/hash"},
+        "manifest_hash": {"$ref": "#/$defs/hash"},
+        "source": {"type": "string", "minLength": 1},
+        "release_ref": {"type": "string", "minLength": 1},
+        "release_status": {"type": "string", "enum": ["available", "unavailable", "revoked"]},
+        "trust_state": {"type": "string", "enum": ["trusted", "quarantined", "unknown"]},
+        "platforms": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "session_platforms": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "required_toolsets": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "required_tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "fallback_for_toolsets": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "fallback_for_tools": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "config_schema": {"type": "object"},
+        "support_files": {"type": "array", "items": {"$ref": "#/$defs/supportFile"}}
+      },
+      "additionalProperties": false
+    }
+  }
+}

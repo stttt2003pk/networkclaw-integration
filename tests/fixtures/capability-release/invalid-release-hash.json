@@ -1,0 +1,8 @@
+{
+  "expected_reason_code": "release_hash_invalid",
+  "manifest": {
+    "schema_version": "capability-release.v1",
+    "release_id": "cap-fixture-invalid",
+    "release_hash": "not-a-sha256-hash"
+  }
+}

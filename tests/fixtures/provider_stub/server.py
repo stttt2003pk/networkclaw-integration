@@ -52,7 +52,7 @@ class ProviderHandler(BaseHTTPRequestHandler):
         self._json(404, {"error": "not_found"})
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path != "/v1/chat/completions":
+        if self.path not in ("/v1/chat/completions", "/v1/responses"):
             self._json(404, {"error": "not_found"})
             return
         try:
@@ -73,10 +73,99 @@ class ProviderHandler(BaseHTTPRequestHandler):
             self._json(400, {"error": "invalid_request"})
             return
         stream = request.get("stream") is True
+        responses = self.path == "/v1/responses"
+        effort = (request.get("reasoning") or {}).get("effort") if responses else request.get("reasoning_effort")
+        max_tokens = request.get("max_output_tokens") if responses else request.get("max_completion_tokens", request.get("max_tokens"))
+        history = request.get("input" if responses else "messages", [])
         self.server.ledger.record(
             "provider.request_received", "provider_request_received",
             mode=self.server.mode, stream=stream,
+            api_mode="codex_responses" if responses else "chat_completions",
+            model=str(request.get("model", ""))[:128],
+            # Only known fixture credentials have a version; never retain a header/key/hash.
+            credential_revision={"Bearer model-fixture-v1": 1, "Bearer model-fixture-v2": 2}.get(
+                self.headers.get("Authorization", ""), 0),
+            reasoning_effort=effort if effort in ("none", "minimal", "low", "medium", "high", "xhigh", "max") else "",
+            max_output_tokens=max_tokens if type(max_tokens) is int and 0 < max_tokens <= 10000000 else None,
+            history_messages=len(history) if isinstance(history, list) else 0,
         )
+        if responses:
+            item = {"id": "msg-fixture", "type": "message", "role": "assistant", "status": "completed",
+                    "content": [{"type": "output_text", "text": "interop-ok", "annotations": []}]}
+            response = {"id": "resp-fixture", "object": "response", "created_at": 1, "status": "completed",
+                        "model": request.get("model"), "output": [item],
+                        "usage": {"input_tokens": 7, "output_tokens": 3, "total_tokens": 10}}
+            if not stream:
+                self._json(200, response)
+            else:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.end_headers()
+                for event in (
+                    {"type": "response.output_item.added", "output_index": 0, "item": item},
+                    {"type": "response.output_text.delta", "output_index": 0, "content_index": 0, "item_id": item["id"], "delta": "interop-ok"},
+                    {"type": "response.output_item.done", "output_index": 0, "item": item},
+                    {"type": "response.completed", "response": response},
+                ):
+                    self.wfile.write(self._sse(event))
+                self.wfile.flush()
+            self.server.ledger.record("provider.response_sent", "provider_succeeded", mode=self.server.mode, status=200)
+            return
+
+        if self.server.mode == "session-execution":
+            names = sorted(tool.get("function", {}).get("name", "") for tool in request.get("tools", []))
+            last_user = max((i for i, message in enumerate(history) if message.get("role") == "user"), default=-1)
+            text = str(history[last_user].get("content") or "") if last_user >= 0 else ""
+            results = [m for m in history[last_user+1:] if m.get("role") == "tool"]
+            skill_verified = False
+            skill_hash, skill_version = '', ''
+            workspace_verified = False
+            for message in results:
+                try:
+                    value = json.loads(message.get("content") or "{}")
+                    skill_verified |= value.get("name") == "workspace-inspection" and value.get("success") is True and bool(value.get("content_hash"))
+                    if value.get("name") == "workspace-inspection" and value.get("success") is True:
+                        candidate = value.get("content_hash", "")
+                        if isinstance(candidate, str) and len(candidate) == 71 and candidate.startswith("sha256:") and all(c in "0123456789abcdef" for c in candidate[7:]):
+                            skill_hash = candidate
+                        version = value.get("version", "")
+                        if isinstance(version, str) and version.isascii() and len(version) <= 128:
+                            skill_version = version
+                    workspace_verified |= "session-workspace-ok" in str(value)
+                except (ValueError, AttributeError):
+                    pass
+            self.server.ledger.record("provider.execution_observed", "execution_observed", tool_names=names,
+                                      skill_verified=skill_verified, skill_content_hash=skill_hash, skill_version=skill_version,
+                                      workspace_read_verified=workspace_verified, model=str(request.get("model", ""))[:128],
+                                      credential_revision={"Bearer model-fixture-v1": 1, "Bearer model-fixture-v2": 2}.get(self.headers.get("Authorization", ""), 0),
+                                      reasoning_effort=effort if effort in ("none", "minimal", "low", "medium", "high", "xhigh", "max") else "",
+                                      max_output_tokens=max_tokens if type(max_tokens) is int and 0 < max_tokens <= 10000000 else None)
+            call_name, arguments = None, {}
+            if names and "session-delegate" in text and "delegate_task" in names and not results:
+                call_name, arguments = "delegate_task", {"goal": "session-child-skill: read workspace-inspection", "max_iterations": 4}
+            elif names and ("session-skill" in text or "session-child-skill" in text):
+                if not results:
+                    call_name, arguments = "skills_list", {}
+                elif len(results) == 1:
+                    call_name, arguments = "skill_view", {"name": "workspace-inspection"}
+                elif len(results) == 2 and "session-child-skill" not in text:
+                    call_name, arguments = "networkclaw_workspace_read", {"path": "fixture.txt"}
+            if call_name:
+                call = {"index": 0, "id": "call-session-"+call_name, "type": "function",
+                        "function": {"name": call_name, "arguments": json.dumps(arguments)}}
+                if not stream:
+                    self._json(200, {"id":"session-fixture","object":"chat.completion","model":request.get("model"),
+                       "choices":[{"index":0,"message":{"role":"assistant","content":None,"tool_calls":[call]},"finish_reason":"tool_calls"}]})
+                else:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self.end_headers()
+                    for delta, finish in (({"role":"assistant","tool_calls":[call]},None),({},"tool_calls")):
+                        self.wfile.write(self._sse({"id":"session-fixture","object":"chat.completion.chunk","model":request.get("model"),
+                            "choices":[{"index":0,"delta":delta,"finish_reason":finish}]}))
+                    self.wfile.write(b"data: [DONE]\n\n")
+                    self.wfile.flush()
+                return
 
         parent_delegation = self.server.mode in {"delegate", "delegate-failure"} and any(
             message.get("role") == "user" and message.get("content") == "reply with a short fixture response"
@@ -182,7 +271,7 @@ class ProviderHandler(BaseHTTPRequestHandler):
             chunks = (chunks[0], {"choices": [{"delta": {"content": "interop-ok\ne06 compressed fixture\n" + "Preserve the fixture task and continue after context compression. " * 20}, "finish_reason": None}]}, chunks[-1])
         for index, chunk in enumerate(chunks):
             payload = {"id": "networkclaw-fixture", "object": "chat.completion.chunk", "model": "fixture", **chunk}
-            if self.server.mode == "usage" and index == len(_CHUNKS) - 1:
+            if self.server.mode in {"usage", "session-execution"} and index == len(_CHUNKS) - 1:
                 payload["usage"] = {"prompt_tokens": 7, "completion_tokens": 3, "total_tokens": 10}
             try:
                 self.wfile.write(self._sse(payload))
@@ -194,7 +283,7 @@ class ProviderHandler(BaseHTTPRequestHandler):
             if self.server.mode == "slow":
                 time.sleep(self.server.delay_ms / 1000)
         try:
-            if self.server.mode == "usage":
+            if self.server.mode in {"usage", "session-execution"}:
                 self.wfile.write(self._sse({"id": "networkclaw-fixture", "object": "chat.completion.chunk", "model": "fixture", "choices": [], "usage": {"prompt_tokens": 7, "completion_tokens": 3, "total_tokens": 10}}))
                 self.wfile.flush()
             self.wfile.write(b"data: [DONE]\n\n")
@@ -233,7 +322,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=0)
-    parser.add_argument("--mode", choices=("stream", "slow", "drop", "reset", "delay", "http-error", "malformed", "todo", "clarification", "usage", "context", "delegate", "delegate-failure"), default="stream")
+    parser.add_argument("--mode", choices=("stream", "slow", "drop", "reset", "delay", "http-error", "malformed", "todo", "clarification", "usage", "context", "delegate", "delegate-failure", "session-execution"), default="stream")
     parser.add_argument("--delay-ms", type=int, default=50)
     args = parser.parse_args()
     try:
